@@ -110,7 +110,12 @@ row() {
 audit() {
   echo "vibe-setup audit — $(pwd)"
   echo "stack: $STACK  (module: $MODULE_DIR)  | fmt: $FMT | test: $TEST"
-  [ -f .vibe-setup.json ] && echo "applied: v$(manifest_version)  (engine v$VIBE_VERSION) — güncelle: scaffold.sh upgrade ."
+  local av=""; [ -f .vibe-setup.json ] && av="$(manifest_version)"
+  if [ -n "$av" ]; then
+    if   [ "$av" -lt "$VIBE_VERSION" ]; then echo "applied: v$av → engine: v$VIBE_VERSION — YENİ SÜRÜM VAR (scaffold.sh upgrade .)"
+    elif [ "$av" -gt "$VIBE_VERSION" ]; then echo "applied: v$av > engine: v$VIBE_VERSION — repo daha yeni sürümle kurulmuş; SKILL'İ güncelle"
+    else echo "applied: v$av (engine v$VIBE_VERSION) — güncel"; fi
+  fi
   echo
   echo "BAĞLAM"
   has_file CLAUDE.md   && row "$OK" "CLAUDE.md" || row "$NO" "CLAUDE.md" "LLM: oluştur (komut+mimari+gotchas)"
@@ -141,6 +146,8 @@ audit() {
   { has_file .github/pull_request_template.md || has_glob '.gitlab/merge_request_templates/*'; } && row "$OK" "PR/MR template" || row "$NO" "PR/MR template" "init düşürür"
   echo
   echo "SCORE=$PASS/$TOTAL"
+  # Makine-okur sürüm sinyali — skill bunu görünce kullanıcıya "upgrade edeyim mi?" diye SORAR.
+  [ -n "$av" ] && [ "$av" -lt "$VIBE_VERSION" ] && echo "UPDATE_AVAILABLE=v$av->v$VIBE_VERSION"
   # MODULE_DIR != . veya birden çok manifest → muhtemelen monorepo/polyglot; script tek stack tespit eder.
   if [ "$MODULE_DIR" != "." ]; then
     echo "Not: nested module ($MODULE_DIR). Monorepo/polyglot ise ek stack'leri elle teyit et — script ilk eşleşeni alır."

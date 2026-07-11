@@ -34,6 +34,11 @@ Bundled dosyalar bu skill dizinindedir: `scaffold.sh`, `stack-profiles.md`, `vib
 ### 1. Tespit + audit (ÖNCE skoru)
 - `bash "$SKILL_DIR/scaffold.sh" profile .` → stack, MODULE_DIR ve komutları al.
 - `bash "$SKILL_DIR/scaffold.sh" audit .` → ✅/❌/— tablosu + `SCORE=N/M` footer.
+- **Sürüm kontrolü (her çalıştırmada):** audit çıktısında `UPDATE_AVAILABLE=vX->vY` satırı varsa
+  kullanıcıya **SOR**: "Repo vibe-setup vX ile kurulmuş, yeni sürüm vY var — şimdi upgrade edeyim mi?"
+  - **Evet** → `## Upgrade akışı`nı izle, sonra bu akışa dön.
+  - **Hayır** → zorlamadan normal devam et (satır bir sonraki çalıştırmada yine çıkar).
+  - Sormadan upgrade ÇALIŞTIRMA; satır yoksa (güncel/manifest yok) hiç bahsetme.
 - **BEFORE skorunu sakla** (hem `SCORE=N/M` hem her satırın ✅/❌'i) — sonda karşılaştıracaksın.
 - Stack `unknown` ise: kullanıcıya dili/komutları sor (fmt/lint/test/build); cevabı `stack-profiles.md`
   formatında not et. Boş repo ise: agnostik iskeleti kur, stack maddelerini "kod gelince" diye işaretle.

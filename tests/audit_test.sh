@@ -26,5 +26,14 @@ after="$(score_of)"
 b="$(num_of "$before")"; a="$(num_of "$after")"
 [ "$a" -gt "$b" ] && ok "init skoru artırdı ($before → $after)" || bad "skor artmadı ($before → $after)"
 
+# 4. sürüm sinyali: güncel kurulum → UPDATE_AVAILABLE YOK; eski manifest → VAR (skill soracak)
+out="$(bash "$SCAFFOLD" audit "$work" 2>/dev/null)"
+printf '%s' "$out" | grep -q 'UPDATE_AVAILABLE' && bad "güncel kurulumda UPDATE_AVAILABLE bastı" || ok "güncel kurulum sinyal basmaz"
+printf '%s' "$out" | grep -q 'güncel' && ok "güncel kurulum 'güncel' der" || bad "'güncel' ibaresi yok"
+awk '{ sub(/"vibeVersion": [0-9]+/, "\"vibeVersion\": 1"); print }' "$work/.vibe-setup.json" > "$work/.vibe-setup.json.t" && mv "$work/.vibe-setup.json.t" "$work/.vibe-setup.json"
+out="$(bash "$SCAFFOLD" audit "$work" 2>/dev/null)"
+printf '%s\n' "$out" | grep -qE '^UPDATE_AVAILABLE=v1->v[0-9]+$' && ok "eski manifest → UPDATE_AVAILABLE=v1->vN" || bad "UPDATE_AVAILABLE sinyali yok/bozuk"
+printf '%s' "$out" | grep -q 'YENİ SÜRÜM VAR' && ok "insan-okur uyarı basıldı" || bad "insan-okur uyarı yok"
+
 echo "audit_test: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]
