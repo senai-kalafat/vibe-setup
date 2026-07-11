@@ -1,0 +1,23 @@
+# vibe-setup
+
+> Bir repoyu AI/agent ("vibe coding") destekli geliştirmeye hazırlayan Claude Code plugin'i:
+> agent-hazırlık audit'i, eksik iskeletlerin scaffold'u ve sürümlü upgrade. Stack-agnostik —
+> 11 ekosistem (Go, Node/TS, Python, Java, Kotlin, Swift, Rust, Ruby, .NET, PHP, Elixir) + boş repo.
+
+İş iki katmana ayrılır: deterministik motor (`scaffold.sh`, saf bash — tespit, iskelet, sha-drift'li
+upgrade) ve akıllı katman (`SKILL.md` akışını izleyen LLM — CLAUDE.md prose, gerçek test, CONFLICT merge).
+Üretilen şablonlar Türkçedir.
+
+## Dokümantasyon
+
+- [README](README.md): kurulum (Claude Code + Cursor), kullanım, tasarım ve checklist gerekçeleri
+- [CLAUDE.md](CLAUDE.md): komutlar, mimari, gotchas, git workflow — agent'ların tek doğruluk kaynağı
+- [SKILL.md](skills/vibe-setup/SKILL.md): LLM orkestrasyon akışı (init 6 faz + upgrade 5 adım)
+- [stack-profiles](skills/vibe-setup/stack-profiles.md): ekosistem başına fmt/lint/test/build komut tablosu
+- [docs/](docs/README.md): mimari genel bakış + ADR'ler + domain sözlüğü
+
+## Optional
+
+- [legacy-runbook](skills/vibe-setup/legacy-runbook.md): yalnızca legacy repo kurulumunda okunur
+- [vibe-checklist şablonu](skills/vibe-setup/vibe-checklist-template.md): hedef repoya kopyalanan kontrol listesi
+- [testler](tests/run.sh): bağımsız bash test suite (dış bağımlılık yok)

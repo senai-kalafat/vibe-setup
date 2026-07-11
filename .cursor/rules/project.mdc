@@ -1,0 +1,6 @@
+---
+description: Proje kuralları — tek doğruluk kaynağı CLAUDE.md
+alwaysApply: true
+---
+Bu projenin kuralları, komutları, mimarisi ve gotchas'ı **CLAUDE.md**'dedir; onu izle.
+Ek doküman: `docs/`.

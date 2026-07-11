@@ -7,8 +7,8 @@
 - [x] CLAUDE.md — işaretçi tarzı, docs'a yönlendirir → [CLAUDE.md](CLAUDE.md)
 - [x] Root README — kurulum + kullanım → [README.md](README.md)
 - [x] AGENTS.md — CLAUDE.md'ye ayna → [AGENTS.md](AGENTS.md)
-- [ ] (ops) Cursor uyumu — `init-cursor` çalıştırılmadı (istenmedi)
-- [ ] (ops) llms.txt — iç repo, dış LLM tüketicisi yok → bilerek kurulmadı
+- [x] (ops) Cursor uyumu → [.cursor/rules/project.mdc](.cursor/rules/project.mdc), [.cursorrules](.cursorrules)
+- [x] (ops) llms.txt — repo public GitHub'da, dış LLM tüketicisi var → [llms.txt](llms.txt)
 - [x] Gotchas — koddan çıkmaz tribal bilgi → [CLAUDE.md](CLAUDE.md) "Gotchas"
 - [ ] Nested README — küçük repo, gerek yok
 
