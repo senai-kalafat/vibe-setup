@@ -1,0 +1,19 @@
+{
+  "name": "vibe-setup",
+  "version": "0.2.0",
+  "description": "Audit any repository for AI/agent (vibe coding) readiness, scaffold the missing pieces, and upgrade an already-set-up repo to a newer version — stack- and language-agnostic.",
+  "author": {
+    "name": "Senai Kalafat"
+  },
+  "homepage": "https://github.com/senai-kalafat/vibe-setup",
+  "repository": "https://github.com/senai-kalafat/vibe-setup",
+  "keywords": [
+    "vibe-coding",
+    "agent-readiness",
+    "claude-md",
+    "scaffold",
+    "audit",
+    "onboarding"
+  ],
+  "skills": "./skills/"
+}

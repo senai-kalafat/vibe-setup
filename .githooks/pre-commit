@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# Repo-tracked pre-commit — herkes için (insan + AI). Enable: git config core.hooksPath .githooks
+# Stack: shell | doc-sync'i blocking yap: STRICT_DOCS=1 | Bypass tümü: --no-verify
+# fmt: file-capable stack'te SADECE staged dosyalar (blocking); değilse repo-geneli (advisory, CI zorlasın).
+set -euo pipefail
+staged="$(git diff --cached --name-only --diff-filter=ACM || true)"
+[ -z "$staged" ] && exit 0
+fail=0
+
+# 1. fmt — tool kuruluysa çalışır; file-capable ise staged-scope & blocking, değilse repo-geneli & advisory.
+fmt_bin="$(printf '%s' "shfmt -d" | awk '{print $1}')"
+if [ "shfmt -d" != "-" ] && command -v "$fmt_bin" >/dev/null 2>&1; then
+  if [ "1" = "1" ]; then
+    staged_src="$(printf '%s\n' "$staged" | grep -E '.sh$' || true)"
+    if [ -n "$staged_src" ]; then
+      # shellcheck disable=SC2086
+      if ! out="$(shfmt -d $staged_src 2>&1)"; then
+        echo "✗ fmt (staged): hata/formatlı değil:" >&2; printf '%s\n' "$out" | sed 's/^/  /' >&2; fail=1
+      elif [ -n "$out" ]; then
+        echo "✗ fmt (staged): formatlı değil:" >&2; printf '%s\n' "$out" | sed 's/^/  /' >&2; fail=1
+      fi
+    fi
+  else
+    if ! out="$(shfmt -d 2>&1)" || [ -n "$out" ]; then
+      echo "ℹ fmt (bloklamaz, repo-geneli — CI zorlasın):" >&2; printf '%s\n' "$out" | sed 's/^/  /' >&2
+    fi
+  fi
+fi
+
+# 2. lint (advisory) — tool kuruluysa
+lint_bin="$(printf '%s' "shellcheck" | awk '{print $1}')"
+if [ "shellcheck" != "-" ] && command -v "$lint_bin" >/dev/null 2>&1; then
+  shellcheck >/tmp/vibe_lint 2>&1 || true
+  [ -s /tmp/vibe_lint ] && { echo "ℹ lint (bloklamaz):" >&2; sed 's/^/  /' /tmp/vibe_lint >&2; }
+fi
+
+# 3. doc-sync (advisory default; STRICT_DOCS=1 → blocking) — kaynak değişti, doküman değişmediyse
+src=0; printf '%s\n' "$staged" | grep -qE '.sh$' && src=1
+doc=0; printf '%s\n' "$staged" | grep -qE '(^docs/.*\.md$|(^|/)(README|CLAUDE|AGENTS)\.md$)' && doc=1
+if [ "$src" = 1 ] && [ "$doc" = 0 ]; then
+  echo "ℹ doc-sync: kaynak değişti, doküman güncellenmedi. docs/ + README/CLAUDE/AGENTS gözden geçir." >&2
+  [ "${STRICT_DOCS:-}" = "1" ] && { echo "  STRICT_DOCS=1 → blocking." >&2; fail=1; }
+fi
+exit "$fail"

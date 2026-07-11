@@ -1,0 +1,22 @@
+# vibe-setup CI — testler saf bash, dış dep yok (bkz tests/run.sh + CLAUDE.md).
+# Araç "kapılar herkes için, CI zorlasın" diyor; bu workflow onu repo'nun kendisinde de uygular.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest # GNU coreutils/grep/sed/awk/find — testlerin beklediği davranış
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash tests/run.sh # *_test.sh otomatik bulunur; herhangi biri fail → job kırmızı
+
+  shellcheck:
+    runs-on: ubuntu-latest # shellcheck runner'da hazır
+    continue-on-error: true # lint advisory (CLAUDE.md gotcha); asıl blocking kapı = test
+    steps:
+      - uses: actions/checkout@v4
+      - run: shellcheck skills/vibe-setup/scaffold.sh tests/*.sh .githooks/pre-commit .githooks/commit-msg

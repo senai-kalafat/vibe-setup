@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bash tests/run.sh)",
+      "Bash(bash tests/audit_test.sh)",
+      "Bash(bash tests/commit_msg_test.sh)",
+      "Bash(bash tests/init_test.sh)",
+      "Bash(bash tests/init_cursor_test.sh)",
+      "Bash(bash tests/precommit_test.sh)",
+      "Bash(bash tests/profile_test.sh)",
+      "Bash(bash tests/upgrade_test.sh)",
+      "Bash(bash skills/vibe-setup/scaffold.sh:*)",
+      "Bash(shellcheck:*)",
+      "Bash(shfmt:*)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./**/.env)"
+    ]
+  }
+}

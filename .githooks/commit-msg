@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# vibe-setup:v3 (managed; elle düzenlersen upgrade EZMEZ → CONFLICT → LLM merge)
+# Ticket-key OPSİYONEL — zorlamak için repo'da bir kez desen tanımla:
+#   git config vibe.ticketre '^[A-Z]{3}-[0-9]{1,4} '   # ör. VAN-3195; kendi regex'in de olur
+# Ayarsızsa hook hiçbir şeyi bloklamaz. Merge/Revert/fixup/squash muaf. Bypass: git commit --no-verify
+set -euo pipefail
+re="$(git config --get vibe.ticketre 2>/dev/null || true)"
+[ -z "$re" ] && exit 0
+subject="$(grep -vE '^[[:space:]]*#' "$1" | grep -vE '^[[:space:]]*$' | head -1 || true)"
+case "$subject" in Merge*|Revert*|fixup!*|squash!*) exit 0 ;; esac
+if ! printf '%s' "$subject" | grep -qE "$re"; then
+  echo "✗ commit-msg: konu 'vibe.ticketre' desenine uymalı: $re" >&2
+  echo "  Gelen: ${subject:-<boş>}" >&2
+  echo "  Bypass (merge/acil): git commit --no-verify | Zorlamayı kaldır: git config --unset vibe.ticketre" >&2
+  exit 1
+fi
