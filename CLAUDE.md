@@ -21,7 +21,7 @@ Repoyu AI/agent geliştirmeye hazırlayan Claude Code plugin'i. Audit + scaffold
 
 Dosyalar:
 - `skills/vibe-setup/SKILL.md` — orkestrasyon akışı (init + upgrade)
-- `skills/vibe-setup/scaffold.sh` — motor (`audit|init|init-cursor|upgrade|profile`)
+- `skills/vibe-setup/scaffold.sh` — motor (`audit|init|init-cursor|init-gemini|upgrade|profile`)
 - `skills/vibe-setup/stack-profiles.md` — stack komut tablosu (insan-okur ayna)
 - `skills/vibe-setup/{vibe-checklist-template,legacy-runbook}.md`
 - `.claude-plugin/{plugin,marketplace}.json` — plugin manifest
@@ -51,6 +51,11 @@ Detay: [docs/](docs/).
   java/rust/dotnet → repo-geneli, advisory; asıl enforcement CI.
 - **Hook tool yoksa atlar** (`command -v`). Bu repoda shellcheck/shfmt kurulu olmayabilir → fmt/lint
   sessizce atlanır, test yine çalışır.
+- **Araç desteği:** Codex ve Kimi Code `AGENTS.md`'yi native okur (`init` zaten düşürür, ekstra dosya
+  yok). Cursor (`init-cursor`) ve Gemini CLI (`init-gemini` → `GEMINI.md`, `@CLAUDE.md` importu) ayrı
+  context dosyası ister — bunlar `managed_paths`'e GİRMEZ (Cursor ile aynı sınıf: bir kez düşer,
+  drift/upgrade takibi yok, audit satırı yok). AGENTS.md'nin metni v4'te değişti (Gemini'nin AGENTS.md
+  okuduğu yanlış iddiası düzeltildi) → bkz `VIBE_VERSION`.
 
 ## Git workflow
 - Branch: `chore/...`, `feat/...`, `fix/...`. Commit: `ABC-1234 emir kipi özet` (3 harf + '-' + ≤4 hane).

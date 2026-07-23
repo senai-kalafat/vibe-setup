@@ -4,6 +4,7 @@
 #   scaffold.sh audit [DIR]       → readiness table (✅/❌/—) + machine-readable SCORE=N/M footer
 #   scaffold.sh init  [DIR]       → drop missing agnostic skeletons (never overwrites) + write .vibe-setup.json
 #   scaffold.sh init-cursor [DIR] → drop Cursor rules (.cursor/rules/*.mdc + .cursorrules → CLAUDE.md)
+#   scaffold.sh init-gemini [DIR] → drop Gemini CLI context file (GEMINI.md → @CLAUDE.md import)
 #   scaffold.sh upgrade [DIR]     → re-apply changed managed templates to an already-set-up repo
 #                                   (sha drift → UPDATE untouched / ADD missing / CONFLICT human-edited; never clobbers)
 #   scaffold.sh profile [DIR]     → print only the detected stack profile (machine-readable)
@@ -14,7 +15,7 @@ set -euo pipefail
 
 # Şema versiyonu (tamsayı). Bir managed template VEYA migration değiştiğinde +1; artifact_changed_in'i de güncelle.
 # plugin.json semver'i ayrı (marketplace); bu sayı upgrade/migration anahtarıdır.
-VIBE_VERSION=3
+VIBE_VERSION=4
 
 CMD="${1:-audit}"
 DIR="${2:-.}"
@@ -88,6 +89,7 @@ artifact_changed_in() { case "$1" in
   .githooks/pre-commit) echo 2 ;;   # v2: sed→bash literal-replace (node SRC_RE `|` delimiter çakışması fix)
   .githooks/commit-msg) echo 3 ;;   # v3: ticket-key hard-coded → opsiyonel (git config vibe.ticketre; ayarsız = bloklamaz)
   .gitmessage)          echo 3 ;;   # v3: ticket-key opsiyonel ibaresi
+  AGENTS.md)            echo 4 ;;   # v4: Gemini AGENTS.md okumaz iddiası düzeltildi; Codex/Kimi Code isimlendirildi
   *) echo 1 ;;
 esac ; }
 # synced = engine sürdürür (template drift → update/conflict). seed = bir kez düşer, sonra kullanıcı sahibi (drift normal).
@@ -225,8 +227,14 @@ render_artifact() {  # $1 = managed path → kanonik güncel içerik (stdout); b
 <!-- vibe-setup:v@VER@ (managed) -->
 # Agent Guide
 
-Bu projenin tek doğruluk kaynağı **CLAUDE.md**'dir. Cursor / Codex / Gemini / Copilot dahil tüm
-agent'lar oradan başlasın: [CLAUDE.md](CLAUDE.md). Ek doküman: [docs/](docs/).
+Bu projenin tek doğruluk kaynağı **CLAUDE.md**'dir.
+
+- **AGENTS.md standardını izleyen ajanlar** (Codex, Kimi Code, vb.) bu dosyayı doğrudan okur →
+  [CLAUDE.md](CLAUDE.md)'ye bakın.
+- **Kendi context dosyası olan araçlar** ayrı pointer kullanır: Cursor → `.cursor/rules/`,
+  Gemini CLI → `GEMINI.md` (ikisi de CLAUDE.md'ye yönlendirir/import eder).
+
+Ek doküman: [docs/](docs/).
 EOF
     ;;
     docs/README.md) emit "$1" <<'EOF'
@@ -440,7 +448,7 @@ upgrade() {
 
 init_cursor() {
   echo "vibe-setup init-cursor — $(pwd)"
-  write_managed_cursor .cursor/rules/project.mdc <<'EOF'
+  write_extra .cursor/rules/project.mdc <<'EOF'
 ---
 description: Proje kuralları — tek doğruluk kaynağı CLAUDE.md
 alwaysApply: true
@@ -448,21 +456,30 @@ alwaysApply: true
 Bu projenin kuralları, komutları, mimarisi ve gotchas'ı **CLAUDE.md**'dedir; onu izle.
 Ek doküman: `docs/`.
 EOF
-  write_managed_cursor .cursorrules <<'EOF'
+  write_extra .cursorrules <<'EOF'
 # Cursor — tek doğruluk kaynağı CLAUDE.md. Docs: docs/.
 # (Modern format: .cursor/rules/*.mdc — bu dosya geriye dönük uyumluluk için.)
 EOF
 }
-write_managed_cursor() {  # $1 path (content on stdin) — never overwrite
+write_extra() {  # $1 path (content on stdin) — never overwrite. Shared by init-cursor, init-gemini.
   if [ -e "$1" ]; then echo "  SKIP  $1 (var)"; return; fi
   mkdir -p "$(dirname "$1")"; cat > "$1"; echo "  NEW   $1"
+}
+
+init_gemini() {
+  echo "vibe-setup init-gemini — $(pwd)"
+  write_extra GEMINI.md <<'EOF'
+# Gemini CLI context — tek doğruluk kaynağı CLAUDE.md
+@CLAUDE.md
+EOF
 }
 
 case "$CMD" in
   audit)   audit ;;
   init)    init ;;
   init-cursor) init_cursor ;;
+  init-gemini) init_gemini ;;
   upgrade) upgrade ;;
   profile) printf 'STACK=%s\nMODULE_DIR=%s\nFMT=%s\nLINT=%s\nTEST=%s\nBUILD=%s\nSRC_RE=%s\nTEST_FIND=%s\nFMT_FILE_OK=%s\nVIBE_VERSION=%s\n' "$STACK" "$MODULE_DIR" "$FMT" "$LINT" "$TEST" "$BUILD" "$SRC_RE" "$TEST_FIND" "$FMT_FILE_OK" "$VIBE_VERSION" ;;
-  *) echo "kullanım: scaffold.sh {audit|init|init-cursor|upgrade|profile} [DIR]" >&2; exit 2 ;;
+  *) echo "kullanım: scaffold.sh {audit|init|init-cursor|init-gemini|upgrade|profile} [DIR]" >&2; exit 2 ;;
 esac
