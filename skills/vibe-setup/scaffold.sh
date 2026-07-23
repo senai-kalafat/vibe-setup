@@ -4,6 +4,7 @@
 #   scaffold.sh audit [DIR]       → readiness table (✅/❌/—) + machine-readable SCORE=N/M footer
 #   scaffold.sh init  [DIR]       → drop missing agnostic skeletons (never overwrites) + write .vibe-setup.json
 #   scaffold.sh init-cursor [DIR] → drop Cursor rules (.cursor/rules/*.mdc + .cursorrules → CLAUDE.md)
+#   scaffold.sh init-gemini [DIR] → drop Gemini CLI context file (GEMINI.md → @CLAUDE.md import)
 #   scaffold.sh upgrade [DIR]     → re-apply changed managed templates to an already-set-up repo
 #                                   (sha drift → UPDATE untouched / ADD missing / CONFLICT human-edited; never clobbers)
 #   scaffold.sh profile [DIR]     → print only the detected stack profile (machine-readable)
@@ -458,11 +459,20 @@ write_extra() {  # $1 path (content on stdin) — never overwrite. Shared by ini
   mkdir -p "$(dirname "$1")"; cat > "$1"; echo "  NEW   $1"
 }
 
+init_gemini() {
+  echo "vibe-setup init-gemini — $(pwd)"
+  write_extra GEMINI.md <<'EOF'
+# Gemini CLI context — tek doğruluk kaynağı CLAUDE.md
+@CLAUDE.md
+EOF
+}
+
 case "$CMD" in
   audit)   audit ;;
   init)    init ;;
   init-cursor) init_cursor ;;
+  init-gemini) init_gemini ;;
   upgrade) upgrade ;;
   profile) printf 'STACK=%s\nMODULE_DIR=%s\nFMT=%s\nLINT=%s\nTEST=%s\nBUILD=%s\nSRC_RE=%s\nTEST_FIND=%s\nFMT_FILE_OK=%s\nVIBE_VERSION=%s\n' "$STACK" "$MODULE_DIR" "$FMT" "$LINT" "$TEST" "$BUILD" "$SRC_RE" "$TEST_FIND" "$FMT_FILE_OK" "$VIBE_VERSION" ;;
-  *) echo "kullanım: scaffold.sh {audit|init|init-cursor|upgrade|profile} [DIR]" >&2; exit 2 ;;
+  *) echo "kullanım: scaffold.sh {audit|init|init-cursor|init-gemini|upgrade|profile} [DIR]" >&2; exit 2 ;;
 esac
