@@ -440,7 +440,7 @@ upgrade() {
 
 init_cursor() {
   echo "vibe-setup init-cursor — $(pwd)"
-  write_managed_cursor .cursor/rules/project.mdc <<'EOF'
+  write_extra .cursor/rules/project.mdc <<'EOF'
 ---
 description: Proje kuralları — tek doğruluk kaynağı CLAUDE.md
 alwaysApply: true
@@ -448,12 +448,12 @@ alwaysApply: true
 Bu projenin kuralları, komutları, mimarisi ve gotchas'ı **CLAUDE.md**'dedir; onu izle.
 Ek doküman: `docs/`.
 EOF
-  write_managed_cursor .cursorrules <<'EOF'
+  write_extra .cursorrules <<'EOF'
 # Cursor — tek doğruluk kaynağı CLAUDE.md. Docs: docs/.
 # (Modern format: .cursor/rules/*.mdc — bu dosya geriye dönük uyumluluk için.)
 EOF
 }
-write_managed_cursor() {  # $1 path (content on stdin) — never overwrite
+write_extra() {  # $1 path (content on stdin) — never overwrite. Shared by init-cursor, init-gemini.
   if [ -e "$1" ]; then echo "  SKIP  $1 (var)"; return; fi
   mkdir -p "$(dirname "$1")"; cat > "$1"; echo "  NEW   $1"
 }
