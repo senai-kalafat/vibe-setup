@@ -19,8 +19,9 @@ set_msha() { # $1 manifest $2 path $3 newsha
 # A. init manifest doğru
 d="$(fresh A)"
 [ -f "$d/.vibe-setup.json" ] && ok "init manifest yazdı" || bad "manifest yok"
-grep -q '"vibeVersion": 3' "$d/.vibe-setup.json" && ok "vibeVersion=3" || bad "vibeVersion yok/yanlış"
+grep -q '"vibeVersion": 4' "$d/.vibe-setup.json" && ok "vibeVersion=4" || bad "vibeVersion yok/yanlış"
 grep -q '".githooks/pre-commit": { "v": 2' "$d/.vibe-setup.json" && ok "pre-commit v2 kayıtlı" || bad "pre-commit v kaydı yok"
+grep -q '"AGENTS.md": { "v": 4' "$d/.vibe-setup.json" && ok "AGENTS.md v4 kayıtlı" || bad "AGENTS.md v kaydı yok"
 
 # B. fresh repo upgrade → drift yok (UPDATE/ADD/CONFLICT boş)
 d="$(fresh B)"
@@ -71,10 +72,10 @@ printf '%s\n' "$(field "$out" CONFLICT)" | grep -q 'pre-commit' && ok "legacy fa
 
 # H. eski manifest sürümü → upgrade sürümü yükseltir; git-repo-değil → v3 migration atlanır (probe-guard)
 d="$(fresh H)"
-awk '{ sub(/"vibeVersion": 3/, "\"vibeVersion\": 1"); print }' "$d/.vibe-setup.json" > "$d/.vibe-setup.json.t" && mv "$d/.vibe-setup.json.t" "$d/.vibe-setup.json"
+awk '{ sub(/"vibeVersion": 4/, "\"vibeVersion\": 1"); print }' "$d/.vibe-setup.json" > "$d/.vibe-setup.json.t" && mv "$d/.vibe-setup.json.t" "$d/.vibe-setup.json"
 out="$(bash "$SCAFFOLD" upgrade "$d" 2>/dev/null)"
 printf '%s' "$out" | grep -q 'applied=v1' && ok "eski uygulanan sürüm algılandı (v1)" || bad "applied=v1 basılmadı"
-grep -q '"vibeVersion": 3' "$d/.vibe-setup.json" && ok "manifest v3'e yükseltildi" || bad "manifest sürümü yükselmedi"
+grep -q '"vibeVersion": 4' "$d/.vibe-setup.json" && ok "manifest v4'e yükseltildi" || bad "manifest sürümü yükselmedi"
 printf '%s\n' "$out" | grep -q '^MIGRATED=' && ok "MIGRATED satırı basıldı" || bad "MIGRATED satırı yok"
 [ -z "$(field "$out" MIGRATED)" ] && ok "git-repo-değil → migration atlandı (MIGRATED boş)" || bad "beklenmedik MIGRATED: '$(field "$out" MIGRATED)'"
 
@@ -82,7 +83,7 @@ printf '%s\n' "$out" | grep -q '^MIGRATED=' && ok "MIGRATED satırı basıldı" 
 if command -v git >/dev/null 2>&1; then
   d="$tmp/I"; mkdir -p "$d"; git -C "$d" init -q
   echo '{}' > "$d/package.json"; bash "$SCAFFOLD" init "$d" >/dev/null 2>&1
-  awk '{ sub(/"vibeVersion": 3/, "\"vibeVersion\": 1"); print }' "$d/.vibe-setup.json" > "$d/.vibe-setup.json.t" && mv "$d/.vibe-setup.json.t" "$d/.vibe-setup.json"
+  awk '{ sub(/"vibeVersion": 4/, "\"vibeVersion\": 1"); print }' "$d/.vibe-setup.json" > "$d/.vibe-setup.json.t" && mv "$d/.vibe-setup.json.t" "$d/.vibe-setup.json"
   out="$(bash "$SCAFFOLD" upgrade "$d" 2>/dev/null)"
   printf '%s' "$(field "$out" MIGRATED)" | grep -q 'ticketre' && ok "v3 migration: MIGRATED ticketre bildirir" || bad "MIGRATED ticketre yok: '$(field "$out" MIGRATED)'"
   [ "$(git -C "$d" config --get vibe.ticketre)" = '^[A-Z]{3}-[0-9]{1,4} ' ] && ok "vibe.ticketre eski desene sabitlendi" || bad "vibe.ticketre set edilmedi"
