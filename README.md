@@ -37,8 +37,9 @@ arar (`MODULE_DIR`); proje artefaktları (CLAUDE.md, docs/, hook) **kökte**, st
 
 ### Skill akışı (6 faz)
 1. **Tespit + audit** → BEFORE skoru saklanır.
-2. **Rapor + onay** → eksikler agnostik / stack-bağımlı diye gruplanır; hedef araç (Cursor/Codex/Gemini/
-   Copilot) ve hangi maddeler kurulacak sorulur. **Kullanıcı seçmeden dosya üretilmez**; tehlikeli/dışa-dönük
+2. **Rapor + onay** → eksikler agnostik / stack-bağımlı diye gruplanır; AGENTS.md zaten Codex/Kimi Code'u
+   kapsar (ekstra dosya gerekmez) — hedef araç sorusu sadece Cursor ve/veya Gemini CLI için ayrı context
+   dosyası (`init-cursor`/`init-gemini`) ve hangi maddeler kurulacak sorulur. **Kullanıcı seçmeden dosya üretilmez**; tehlikeli/dışa-dönük
    olanlar (plugin enable, harici repo, izin genişletme) ayrıca onay ister.
 3. **Agnostik iskelet** (`init`) → AGENTS.md, docs/ + ADR template, .gitmessage, PR/MR şablonu
    (GitHub `.github/` ya da GitLab `.gitlab/` otomatik), .githooks/pre-commit + commit-msg, settings.json iskeleti.
@@ -180,8 +181,10 @@ Skill bu maddelere göre denetler ve dolu halini repo köküne `vibe-checklist.m
 ### BAĞLAM
 - **CLAUDE.md — işaretçi tarzı** · Agent'ın birincil rehberi. İçeriği dökmek yerine docs'a yönlendirmeli → token tasarrufu, tembel yükleme.
 - **Root README** · İnsan + agent için hızlı başlangıç ve linkler.
-- **AGENTS.md** · CLAUDE.md'ye ayna; Cursor/Codex/Gemini/Copilot tek kaynağa baksın (çapraz araç).
+- **AGENTS.md** · CLAUDE.md'ye ayna; AGENTS.md standardını izleyen ajanlar (Codex, Kimi Code, vb.) doğrudan
+  okur.
 - **(ops) Cursor uyumu** · `.cursor/rules/*.mdc` + `.cursorrules` → CLAUDE.md'ye yönlendirir. Sadece istenirse.
+- **(ops) Gemini uyumu** · `GEMINI.md` (`@CLAUDE.md` import) → CLAUDE.md'nin içeriğini doğrudan çeker. Sadece istenirse.
 - **(ops) llms.txt** · Araç-bağımsız ince repo haritası (llmstxt.org); **sadece** dış LLM/doküman sitesi tüketecekse. İç repoda tüketicisi yok → default kurulmaz.
 - **Gotchas** · Koddan çıkarılması zor tribal tuzaklar yazılı. Legacy'nin en pahalı bilgisi.
 - **Nested README** · Sık dokunulan paketlerde patern örneği; agent o klasörde bağlamı bulur.
