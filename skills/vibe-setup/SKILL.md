@@ -46,8 +46,9 @@ Bundled dosyalar bu skill dizinindedir: `scaffold.sh`, `stack-profiles.md`, `vib
 ### 2. Rapor + onay (+ hedef araçlar)
 - Audit tablosunu kullanıcıya göster. Eksikleri iki grupta özetle:
   **agnostik** (script düşürür) ve **stack-bağımlı** (sen dolduracaksın).
-- **Hedef araç sorusu:** Claude varsayılan. Kullanıcıya sor: **"Cursor uyumluluğu da istiyor musun?"**
-  (gerekirse Codex/Gemini/Copilot de). Evet ise Faz 3'te `init-cursor` çalıştır + içeriği doldur.
+- **Hedef araç sorusu:** Claude varsayılan. AGENTS.md zaten Codex ve Kimi Code'u kapsar — bu ikisi
+  ekstra dosya istemez, hiçbir şey yapma. Kullanıcıya sor: **"Cursor ve/veya Gemini CLI için ayrı
+  context dosyası ister misin?"** Evet ise Faz 3'te ilgili `init-cursor` / `init-gemini`'yi çalıştır.
 - **Ticket-key sorusu (zorunlu SOR, varsayma):** commit mesajında ticket-key zorlansın mı?
   Varsayılan **zorlamasız** (hook hiçbir şeyi bloklamaz). Kullanıcı isterse formatı da sor —
   standart `ABC-1234` mi, özel regex mi? Cevaba göre Faz 3 sonrasında:
@@ -64,6 +65,8 @@ Bundled dosyalar bu skill dizinindedir: `scaffold.sh`, `stack-profiles.md`, `vib
   Faz 2'de kullanıcıya sordun; ayarsız = bloklamaz), .claude/settings.json iskeleti.
 - Kullanıcı **Cursor** dediyse: `bash "$SKILL_DIR/scaffold.sh" init-cursor .` → `.cursor/rules/project.mdc`
   + `.cursorrules` (ikisi de CLAUDE.md'ye yönlendirir).
+- Kullanıcı **Gemini** dediyse: `bash "$SKILL_DIR/scaffold.sh" init-gemini .` → `GEMINI.md`
+  (`@CLAUDE.md` importu — Gemini CLI içeriği doğrudan çeker, pointer değil).
 - Script var olanı **ezmez** (SKIP). Çıktıdaki NEW/SKIP/EDIT'i kullanıcıya aktar.
 
 ### 4. Stack-bağımlı içerik (sen üret — repoyu OKU, uydurma)
