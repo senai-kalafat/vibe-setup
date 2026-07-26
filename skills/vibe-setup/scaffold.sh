@@ -330,9 +330,11 @@ EOF
 manifest_version() { [ -f .vibe-setup.json ] && grep -oE '"vibeVersion"[[:space:]]*:[[:space:]]*[0-9]+' .vibe-setup.json | grep -oE '[0-9]+' | head -1; }
 manifest_sha()     { [ -f .vibe-setup.json ] && grep -F "\"$1\":" .vibe-setup.json | grep -oE '"sha"[[:space:]]*:[[:space:]]*"[0-9]+"' | grep -oE '[0-9]+' | head -1; }
 manifest_created() { [ -f .vibe-setup.json ] && grep -F "\"$1\":" .vibe-setup.json | grep -oE '"created"[[:space:]]*:[[:space:]]*(true|false)' | grep -oE 'true|false' | head -1; }
+manifest_gitignore_line() { [ -f .vibe-setup.json ] && grep -oE '"gitignoreLine"[[:space:]]*:[[:space:]]*"[^"]*"' .vibe-setup.json | sed -E 's/.*:[[:space:]]*"([^"]*)"/\1/' | head -1; }
 
 CONFLICT_PATHS=""   # upgrade doldurur; manifest bu dosyaların ESKİ sha'sını korur (kullanıcı edit'i "blessed" olmasın)
 NEW_PATHS=""        # write_managed/write_extra bu ÇALIŞTIRMADA "NEW" basılan yolları doldurur (created:true tespiti için)
+GITIGNORE_LINE=""   # init bu ÇALIŞTIRMADA .gitignore'a satır eklediyse doldurur; boşsa write_manifest eski kaydı korur
 sha_for_manifest() {
   case " $CONFLICT_PATHS " in
     *" $1 "*) manifest_sha "$1" 2>/dev/null || sha_of_path "$1" ;;
@@ -353,6 +355,8 @@ write_manifest() {
   local ts; ts="$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)"
   local paths=() p; for p in $(managed_paths); do [ -e "$p" ] && paths+=("$p"); done
   local extras=(); for p in $(extra_paths); do [ -e "$p" ] && extras+=("$p"); done
+  local gi; gi="$GITIGNORE_LINE"
+  [ -z "$gi" ] && gi="$(manifest_gitignore_line 2>/dev/null || true)"
   # ÖNCE body'yi kur (eski .vibe-setup.json hâlâ dururken sha_for_manifest CONFLICT'lerin eski sha'sını okur),
   # SONRA tek seferde yaz — yoksa `> file` redirect'i dosyayı baştan trunc eder, eski sha kaybolur.
   local body; body="$(
@@ -374,6 +378,9 @@ write_manifest() {
       printf '    "%s": { "sha": "%s", "created": %s }%s\n' "$p" "$(sha_for_manifest "$p")" "$(created_for_manifest "$p")" "$esep"
     done
     echo "  },"
+    if [ -n "$gi" ]; then
+      printf '  "gitignoreLine": "%s",\n' "$gi"
+    fi
     echo "  \"llm\": [\"CLAUDE.md\", \"docs/\", \"tests/\"]"
     echo "}"
   )"
@@ -396,6 +403,7 @@ init() {
 
   if [ -f .gitignore ] && ! grep -q 'settings.local.json' .gitignore; then
     printf '\n.claude/settings.local.json\n' >> .gitignore; echo "  EDIT  .gitignore (+settings.local.json)"
+    GITIGNORE_LINE=".claude/settings.local.json"
   fi
 
   write_manifest

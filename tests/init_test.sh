@@ -64,5 +64,23 @@ bash "$SCAFFOLD" init "$pre" >/dev/null 2>&1
 grep -q '"AGENTS.md": { "v": 4, "sha": "[0-9]*", "created": true' "$pre/.vibe-setup.json" && ok "yeni yazilan AGENTS.md created:true" || bad "AGENTS.md created:true degil"
 grep -q '".gitmessage": { "v": 3, "sha": "[0-9]*", "created": false' "$pre/.vibe-setup.json" && ok "onceden var olan .gitmessage created:false" || bad ".gitmessage created:false degil"
 
+# 7. gitignoreLine — init'in .gitignore'a eklediği satır manifestte kayıtlı, upgrade'de de korunur
+gi1="$tmp/gitignore-append"; mkdir -p "$gi1"; printf 'node_modules/\n' > "$gi1/.gitignore"
+bash "$SCAFFOLD" init "$gi1" >/dev/null 2>&1
+grep -q 'settings.local.json' "$gi1/.gitignore" && ok "gitignore satiri eklendi" || bad "gitignore satiri eklenmedi"
+grep -q '"gitignoreLine": ".claude/settings.local.json"' "$gi1/.vibe-setup.json" && ok "gitignoreLine manifestte kayitli" || bad "gitignoreLine manifestte yok"
+bash "$SCAFFOLD" upgrade "$gi1" >/dev/null 2>&1
+grep -q '"gitignoreLine": ".claude/settings.local.json"' "$gi1/.vibe-setup.json" && ok "gitignoreLine upgrade sonrasi da korunur" || bad "gitignoreLine upgrade'de kayboldu"
+
+# 8. gitignoreLine — satır zaten varsa hiçbir şey eklenmez/kaydedilmez
+gi2="$tmp/gitignore-preexisting"; mkdir -p "$gi2"; printf 'node_modules/\n.claude/settings.local.json\n' > "$gi2/.gitignore"
+bash "$SCAFFOLD" init "$gi2" >/dev/null 2>&1
+grep -q 'gitignoreLine' "$gi2/.vibe-setup.json" && bad "onceden var olan satir yanlislikla kaydedildi" || ok "onceden var olan satir kaydedilmedi"
+
+# 9. gitignoreLine — .gitignore hiç yoksa sorun çıkarmaz, alan basılmaz
+gi3="$tmp/no-gitignore"; mkdir -p "$gi3"
+bash "$SCAFFOLD" init "$gi3" >/dev/null 2>&1
+grep -q 'gitignoreLine' "$gi3/.vibe-setup.json" && bad ".gitignore yokken gitignoreLine basildi" || ok ".gitignore yokken gitignoreLine basilmadi"
+
 echo "init_test: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]
