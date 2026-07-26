@@ -73,5 +73,16 @@ bash "$SCAFFOLD" remove "$g" --apply >/dev/null 2>&1
 grep -q 'settings.local.json' "$g/.gitignore" && bad "--apply: gitignore satiri silinmedi" || ok "--apply: gitignore satiri silindi"
 grep -q 'node_modules/' "$g/.gitignore" && ok "--apply: gitignore'un geri kalani korundu" || bad "--apply: gitignore'un geri kalani da silindi"
 
+# H. --apply — vibe-setup'ın eklediği satır .gitignore'un TEK içeriğiyse: dosya kaybolmaz,
+#    boş kalır (silinmez/crash olmaz), .gitignore.tmp artığı kalmaz (regresyon: grep -v tek
+#    satırı elerken çıkışı 1 olur, && ile zincirlenmiş mv o zaman hiç çalışmazdı)
+h="$tmp/apply-gitignore-onlyline"; mkdir -p "$h"; echo '{}' > "$h/package.json"; touch "$h/.gitignore"
+bash "$SCAFFOLD" init "$h" >/dev/null 2>&1
+printf '.claude/settings.local.json\n' > "$h/.gitignore"   # init'in eklediği bos satiri elle temizle → satir TEK icerik
+bash "$SCAFFOLD" remove "$h" --apply >/dev/null 2>&1
+[ -e "$h/.gitignore" ] && ok "--apply (tek satir): .gitignore hala var (kaybolmadi)" || bad "--apply (tek satir): .gitignore kayboldu — CIDDI HATA"
+[ -e "$h/.gitignore" ] && [ ! -s "$h/.gitignore" ] && ok "--apply (tek satir): .gitignore artik bos" || bad "--apply (tek satir): .gitignore bos degil (satir hala duruyor)"
+[ ! -e "$h/.gitignore.tmp" ] && ok "--apply (tek satir): .gitignore.tmp artigi kalmadi" || bad "--apply (tek satir): .gitignore.tmp artigi kaldi"
+
 echo "remove_test: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]

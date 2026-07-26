@@ -576,7 +576,10 @@ remove() {
 
   for p in ${to_remove[@]+"${to_remove[@]}"}; do rm -f "$p"; done
   if [ "$gi_remove" = 1 ]; then
-    grep -vxF "$gi" .gitignore > .gitignore.tmp && mv .gitignore.tmp .gitignore
+    # grep -v exits 1 (no output) when $gi was the ONLY line — that's a valid empty
+    # result here, not a failure, so don't gate the mv on grep's exit status.
+    grep -vxF "$gi" .gitignore > .gitignore.tmp || true
+    mv .gitignore.tmp .gitignore
   fi
   local d
   for p in ${to_remove[@]+"${to_remove[@]}"}; do
