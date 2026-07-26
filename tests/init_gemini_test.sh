@@ -15,6 +15,8 @@ out1="$(bash "$SCAFFOLD" init-gemini "$work" 2>&1)"
 [ -e "$work/GEMINI.md" ] && ok "olustu: GEMINI.md" || bad "yok: GEMINI.md"
 grep -q '@CLAUDE.md' "$work/GEMINI.md" 2>/dev/null && ok "GEMINI.md CLAUDE.md'yi import eder" || bad "GEMINI.md @CLAUDE.md import satırı yok"
 printf '%s' "$out1" | grep -q 'NEW' && ok "ilk init-gemini NEW basar" || bad "ilk init-gemini NEW basmadi"
+[ -f "$work/.vibe-setup.json" ] && ok "init-gemini tek basina manifest yazar" || bad "init-gemini manifest yazmadi"
+grep -q '"GEMINI.md": { "sha": "[0-9]*", "created": true' "$work/.vibe-setup.json" 2>/dev/null && ok "extras: GEMINI.md created:true kayitli" || bad "extras: GEMINI.md manifest kaydi yok/yanlis"
 
 # 2. ezmezlik — kullanıcı düzenlemesi ikinci çalıştırmada korunmalı (SKIP)
 printf '\n# KULLANICI OZEL KURAL\n' >> "$work/GEMINI.md"

@@ -84,6 +84,11 @@ managed_paths() {
     .gitmessage .githooks/pre-commit .githooks/commit-msg .claude/settings.json "$(pr_template_path)"
 }
 managed_present() { local p; for p in $(managed_paths); do [ -e "$p" ] && return 0; done; return 1; }
+# init-cursor/init-gemini'nin düşürdüğü "extra" dosyalar — managed_paths'e GİRMEZ (versiyon/drift takibi yok,
+# audit satırı yok), ama remove'un provenance'ı için manifestin ayrı extras bölümünde kaydedilir.
+extra_paths() {
+  printf '%s\n' .cursor/rules/project.mdc .cursorrules GEMINI.md
+}
 # Her artifact en son hangi VIBE_VERSION'da değişti (stamp + manifest v + upgrade raporu için).
 artifact_changed_in() { case "$1" in
   .githooks/pre-commit) echo 2 ;;   # v2: sed→bash literal-replace (node SRC_RE `|` delimiter çakışması fix)
@@ -347,6 +352,7 @@ created_for_manifest() {
 write_manifest() {
   local ts; ts="$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)"
   local paths=() p; for p in $(managed_paths); do [ -e "$p" ] && paths+=("$p"); done
+  local extras=(); for p in $(extra_paths); do [ -e "$p" ] && extras+=("$p"); done
   # ÖNCE body'yi kur (eski .vibe-setup.json hâlâ dururken sha_for_manifest CONFLICT'lerin eski sha'sını okur),
   # SONRA tek seferde yaz — yoksa `> file` redirect'i dosyayı baştan trunc eder, eski sha kaybolur.
   local body; body="$(
@@ -359,6 +365,13 @@ write_manifest() {
     for p in ${paths[@]+"${paths[@]}"}; do
       i=$((i+1)); sep=","; [ "$i" -eq "$n" ] && sep=""
       printf '    "%s": { "v": %s, "sha": "%s", "created": %s }%s\n' "$p" "$(artifact_changed_in "$p")" "$(sha_for_manifest "$p")" "$(created_for_manifest "$p")" "$sep"
+    done
+    echo "  },"
+    echo "  \"extras\": {"
+    local en=${#extras[@]} ei=0 esep
+    for p in ${extras[@]+"${extras[@]}"}; do
+      ei=$((ei+1)); esep=","; [ "$ei" -eq "$en" ] && esep=""
+      printf '    "%s": { "sha": "%s", "created": %s }%s\n' "$p" "$(sha_for_manifest "$p")" "$(created_for_manifest "$p")" "$esep"
     done
     echo "  },"
     echo "  \"llm\": [\"CLAUDE.md\", \"docs/\", \"tests/\"]"
@@ -473,10 +486,13 @@ EOF
 # Cursor — tek doğruluk kaynağı CLAUDE.md. Docs: docs/.
 # (Modern format: .cursor/rules/*.mdc — bu dosya geriye dönük uyumluluk için.)
 EOF
+  write_manifest
 }
 write_extra() {  # $1 path (content on stdin) — never overwrite. Shared by init-cursor, init-gemini.
   if [ -e "$1" ]; then echo "  SKIP  $1 (var)"; return; fi
-  mkdir -p "$(dirname "$1")"; cat > "$1"; echo "  NEW   $1"
+  mkdir -p "$(dirname "$1")"; cat > "$1"
+  NEW_PATHS="$NEW_PATHS $1"
+  echo "  NEW   $1"
 }
 
 init_gemini() {
@@ -485,6 +501,7 @@ init_gemini() {
 # Gemini CLI context — tek doğruluk kaynağı CLAUDE.md
 @CLAUDE.md
 EOF
+  write_manifest
 }
 
 case "$CMD" in
