@@ -7,6 +7,8 @@
 #   scaffold.sh init-gemini [DIR] → drop Gemini CLI context file (GEMINI.md → @CLAUDE.md import)
 #   scaffold.sh upgrade [DIR]     → re-apply changed managed templates to an already-set-up repo
 #                                   (sha drift → UPDATE untouched / ADD missing / CONFLICT human-edited; never clobbers)
+#   scaffold.sh remove [DIR] [--apply] → dry-run (default) or actually delete: only paths vibe-setup
+#                                   created AND that are still unchanged since creation; never LLM content
 #   scaffold.sh profile [DIR]     → print only the detected stack profile (machine-readable)
 #
 # The LLM-driven part (filling CLAUDE.md prose, real tests, deny paths, CONFLICT merges) is the SKILL's job;
@@ -17,8 +19,16 @@ set -euo pipefail
 # plugin.json semver'i ayrı (marketplace); bu sayı upgrade/migration anahtarıdır.
 VIBE_VERSION=4
 
-CMD="${1:-audit}"
-DIR="${2:-.}"
+APPLY=0
+ARGS=()
+for a in "$@"; do
+  case "$a" in
+    --apply) APPLY=1 ;;
+    *) ARGS+=("$a") ;;
+  esac
+done
+CMD="${ARGS[0]:-audit}"
+DIR="${ARGS[1]:-.}"
 cd "$DIR"
 
 # ---------------------------------------------------------------- stack detection + profile
@@ -512,12 +522,116 @@ EOF
   write_manifest
 }
 
+# ---------------------------------------------------------------- remove (dry-run varsayılan; --apply gerçek siler)
+remove() {
+  echo "vibe-setup remove — $(pwd)  $([ "$APPLY" = 1 ] && echo '(--apply)' || echo '(dry-run)')"
+  if [ ! -f .vibe-setup.json ]; then
+    echo "Manifest yok — vibe-setup bu repoda kurulu değil (ya da zaten kaldırılmış)."
+    return 0
+  fi
+
+  local p created cursha mansha
+  local to_remove=() kept_edited=() pre_existing_count=0
+
+  for p in $(managed_paths) $(extra_paths); do
+    [ -e "$p" ] || continue
+    created="$(manifest_created "$p" 2>/dev/null || true)"
+    if [ "$created" != "true" ]; then
+      pre_existing_count=$((pre_existing_count+1))
+      continue
+    fi
+    mansha="$(manifest_sha "$p" 2>/dev/null || true)"
+    cursha="$(sha_of_path "$p")"
+    if [ "$cursha" = "$mansha" ]; then to_remove+=("$p"); else kept_edited+=("$p"); fi
+  done
+
+  local gi gi_remove=0
+  gi="$(manifest_gitignore_line 2>/dev/null || true)"
+  if [ -n "$gi" ] && [ -f .gitignore ] && grep -qxF "$gi" .gitignore; then gi_remove=1; fi
+
+  echo
+  echo "SİLİNECEK (vibe-setup yarattı, değişmemiş):"
+  if [ ${#to_remove[@]} -eq 0 ]; then echo "  (yok)"; else printf '  - %s\n' ${to_remove[@]+"${to_remove[@]}"}; fi
+  [ "$gi_remove" = 1 ] && echo "  - .gitignore: \"$gi\" satırı"
+
+  echo
+  echo "ELLE DÜZENLENMİŞ — DOKUNULMAYACAK:"
+  if [ ${#kept_edited[@]} -eq 0 ]; then echo "  (yok)"; else printf '  - %s\n' ${kept_edited[@]+"${kept_edited[@]}"}; fi
+
+  echo
+  echo "ÖNCEDEN VARDI — hiç dokunulmadı: $pre_existing_count dosya"
+  echo
+  echo "KAPSAM DIŞI — elle gözden geçir: CLAUDE.md, docs/, tests/, .claude/settings.json içeriği"
+  echo
+  echo "(varsa) git config temizliği — önerilir, otomatik yapılmadı:"
+  echo "  git config --unset core.hooksPath"
+  echo "  git config --unset commit.template"
+  echo "  git config --unset vibe.ticketre"
+
+  if [ "$APPLY" != 1 ]; then
+    echo
+    echo "Dry-run — hiçbir şey silinmedi. Uygulamak için: scaffold.sh remove . --apply"
+    return 0
+  fi
+
+  for p in ${to_remove[@]+"${to_remove[@]}"}; do rm -f "$p"; done
+  if [ "$gi_remove" = 1 ]; then
+    grep -vxF "$gi" .gitignore > .gitignore.tmp && mv .gitignore.tmp .gitignore
+  fi
+  local d
+  for p in ${to_remove[@]+"${to_remove[@]}"}; do
+    d="$(dirname "$p")"
+    while [ "$d" != "." ] && [ -d "$d" ]; do
+      rmdir "$d" 2>/dev/null || break
+      d="$(dirname "$d")"
+    done
+  done
+
+  {
+    echo "# vibe-remove report — $(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)"
+    echo
+    echo "## Silinen dosyalar"
+    if [ ${#to_remove[@]} -eq 0 ] && [ "$gi_remove" != 1 ]; then
+      echo "(yok)"
+    else
+      for p in ${to_remove[@]+"${to_remove[@]}"}; do echo "- $p"; done
+      [ "$gi_remove" = 1 ] && echo "- .gitignore: \"$gi\" satırı"
+    fi
+    echo
+    echo "## Elle düzenlenmiş — dokunulmadı"
+    if [ ${#kept_edited[@]} -eq 0 ]; then
+      echo "(yok)"
+    else
+      for p in ${kept_edited[@]+"${kept_edited[@]}"}; do echo "- $p — oluşturulduğundan beri değişmiş, silinmedi"; done
+    fi
+    echo
+    echo "## Pre-existing — hiç dokunulmadı"
+    echo "$pre_existing_count dosya vibe-setup'tan önce zaten vardı, elle silinmedi."
+    echo
+    echo "## Kapsam dışı — elle gözden geçir"
+    echo "CLAUDE.md, docs/, tests/, .claude/settings.json içeriği (LLM tarafından dolduruldu, otomatik silinmez)."
+    echo
+    echo "## (varsa) git config temizliği — önerilir, otomatik yapılmadı"
+    echo '```'
+    echo "git config --unset core.hooksPath"
+    echo "git config --unset commit.template"
+    echo "git config --unset vibe.ticketre"
+    echo '```'
+  } > vibe-remove-report.md
+
+  rm -f .vibe-setup.json
+
+  echo
+  echo "Silindi. Rapor: vibe-remove-report.md"
+}
+
 case "$CMD" in
   audit)   audit ;;
   init)    init ;;
   init-cursor) init_cursor ;;
   init-gemini) init_gemini ;;
   upgrade) upgrade ;;
+  remove)  remove ;;
   profile) printf 'STACK=%s\nMODULE_DIR=%s\nFMT=%s\nLINT=%s\nTEST=%s\nBUILD=%s\nSRC_RE=%s\nTEST_FIND=%s\nFMT_FILE_OK=%s\nVIBE_VERSION=%s\n' "$STACK" "$MODULE_DIR" "$FMT" "$LINT" "$TEST" "$BUILD" "$SRC_RE" "$TEST_FIND" "$FMT_FILE_OK" "$VIBE_VERSION" ;;
-  *) echo "kullanım: scaffold.sh {audit|init|init-cursor|init-gemini|upgrade|profile} [DIR]" >&2; exit 2 ;;
+  *) echo "kullanım: scaffold.sh {audit|init|init-cursor|init-gemini|upgrade|remove|profile} [DIR] [--apply]" >&2; exit 2 ;;
 esac
