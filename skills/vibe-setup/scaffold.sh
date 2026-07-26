@@ -324,12 +324,24 @@ EOF
 # ---------------------------------------------------------------- version manifest (.vibe-setup.json)
 manifest_version() { [ -f .vibe-setup.json ] && grep -oE '"vibeVersion"[[:space:]]*:[[:space:]]*[0-9]+' .vibe-setup.json | grep -oE '[0-9]+' | head -1; }
 manifest_sha()     { [ -f .vibe-setup.json ] && grep -F "\"$1\":" .vibe-setup.json | grep -oE '"sha"[[:space:]]*:[[:space:]]*"[0-9]+"' | grep -oE '[0-9]+' | head -1; }
+manifest_created() { [ -f .vibe-setup.json ] && grep -F "\"$1\":" .vibe-setup.json | grep -oE '"created"[[:space:]]*:[[:space:]]*(true|false)' | grep -oE 'true|false' | head -1; }
 
 CONFLICT_PATHS=""   # upgrade doldurur; manifest bu dosyaların ESKİ sha'sını korur (kullanıcı edit'i "blessed" olmasın)
+NEW_PATHS=""        # write_managed/write_extra bu ÇALIŞTIRMADA "NEW" basılan yolları doldurur (created:true tespiti için)
 sha_for_manifest() {
   case " $CONFLICT_PATHS " in
     *" $1 "*) manifest_sha "$1" 2>/dev/null || sha_of_path "$1" ;;
     *) sha_of_path "$1" ;;
+  esac
+}
+# created bir kez set edilince asla flip olmaz: manifestte zaten kayıtlıysa onu koru (CONFLICT'te bile),
+# yoksa bu çalıştırmada NEW basıldıysa true, SKIP basıldıysa (zaten vardı) false.
+created_for_manifest() {
+  local prior; prior="$(manifest_created "$1" 2>/dev/null || true)"
+  if [ -n "$prior" ]; then echo "$prior"; return; fi
+  case " $NEW_PATHS " in
+    *" $1 "*) echo true ;;
+    *) echo false ;;
   esac
 }
 write_manifest() {
@@ -346,7 +358,7 @@ write_manifest() {
     local n=${#paths[@]} i=0 sep
     for p in ${paths[@]+"${paths[@]}"}; do
       i=$((i+1)); sep=","; [ "$i" -eq "$n" ] && sep=""
-      printf '    "%s": { "v": %s, "sha": "%s" }%s\n' "$p" "$(artifact_changed_in "$p")" "$(sha_for_manifest "$p")" "$sep"
+      printf '    "%s": { "v": %s, "sha": "%s", "created": %s }%s\n' "$p" "$(artifact_changed_in "$p")" "$(sha_for_manifest "$p")" "$(created_for_manifest "$p")" "$sep"
     done
     echo "  },"
     echo "  \"llm\": [\"CLAUDE.md\", \"docs/\", \"tests/\"]"
@@ -361,6 +373,7 @@ write_managed() {  # $1 = managed path
   mkdir -p "$(dirname "$1")"
   render_artifact "$1" > "$1"
   case "$1" in .githooks/*) chmod +x "$1" ;; esac
+  NEW_PATHS="$NEW_PATHS $1"
   echo "  NEW   $1"
 }
 

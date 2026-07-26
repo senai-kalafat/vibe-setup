@@ -48,6 +48,7 @@ grep -q "\"sha\": \"$orig\"" "$d/.vibe-setup.json" && ok "manifest eski sha'yı 
 out2="$(bash "$SCAFFOLD" upgrade "$d" 2>/dev/null)"
 [ "$(field "$out2" CONFLICT)" = ".githooks/pre-commit" ] && ok "2. upgrade hâlâ CONFLICT" || bad "2. upgrade conflict düştü: U='$(field "$out2" UPDATE)'"
 grep -q 'KULLANICI OZEL SATIR' "$d/.githooks/pre-commit" && ok "2. upgrade'de de ezilmedi" || bad "2. upgrade kullanıcı edit'ini ezdi!"
+grep -q '".githooks/pre-commit": { "v": 2, "sha": "[0-9]*", "created": true' "$d/.vibe-setup.json" && ok "CONFLICT'te de created:true korunur" || bad "created flag CONFLICT'te bozuldu"
 
 # E. eksik dosya → ADD
 d="$(fresh E)"

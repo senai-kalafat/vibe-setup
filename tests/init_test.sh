@@ -24,9 +24,10 @@ has .claude/settings.json
 has .github/pull_request_template.md
 printf '%s' "$out1" | grep -q 'NEW' && ok "ilk init NEW basar" || bad "ilk init NEW basmadi"
 
-# 2. settings.json geçerli JSON
+# 2. settings.json + manifest geçerli JSON
 if command -v jq >/dev/null 2>&1; then
   jq -e . "$work/.claude/settings.json" >/dev/null 2>&1 && ok "settings.json gecerli JSON" || bad "settings.json bozuk JSON"
+  jq -e . "$work/.vibe-setup.json" >/dev/null 2>&1 && ok ".vibe-setup.json gecerli JSON" || bad ".vibe-setup.json bozuk JSON"
 else
   echo "  skip: jq yok — JSON gecerlilik atlandi"
 fi
@@ -55,6 +56,13 @@ printf '%s' "$nout" | grep -qi 'sed:' && bad "node init 'sed:' hatası bastı" |
 grep -qF 'js|ts|jsx|tsx' "$node/.githooks/pre-commit" 2>/dev/null && ok "SRC_RE pre-commit'e gömüldü" || bad "SRC_RE gömülmedi"
 bash -n "$node/.githooks/pre-commit" 2>/dev/null && ok "node pre-commit gecerli bash" || bad "node pre-commit syntax hatasi"
 grep -q '@FMT@\|@SRCRE@\|@STACK@\|@LINT@\|@FMTFILEOK@\|@VER@' "$node/.githooks/pre-commit" 2>/dev/null && bad "ikame edilmemis @marker@ kaldi" || ok "tum @marker@ ikame edildi"
+
+# 6. created flag — yeni yazılan dosya true, önceden var olan (SKIP'lenen) dosya false
+pre="$tmp/pre-existing"; mkdir -p "$pre"
+echo '# zaten vardı' > "$pre/.gitmessage"
+bash "$SCAFFOLD" init "$pre" >/dev/null 2>&1
+grep -q '"AGENTS.md": { "v": 4, "sha": "[0-9]*", "created": true' "$pre/.vibe-setup.json" && ok "yeni yazilan AGENTS.md created:true" || bad "AGENTS.md created:true degil"
+grep -q '".gitmessage": { "v": 3, "sha": "[0-9]*", "created": false' "$pre/.vibe-setup.json" && ok "onceden var olan .gitmessage created:false" || bad ".gitmessage created:false degil"
 
 echo "init_test: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]
