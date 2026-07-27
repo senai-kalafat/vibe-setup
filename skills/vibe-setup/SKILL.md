@@ -25,6 +25,9 @@ Repo **zaten kuruluysa** (`.vibe-setup.json` ya da managed dosyalar var) ve yeni
 init değil, **`## Upgrade akışı`**'nı izle (aşağıda) — engine değişen template'leri taşır, elle düzenlenmiş
 dosyaları CONFLICT olarak sana getirir, sen merge edersin.
 
+Kullanıcı **kaldırmak/geri almak** istiyorsa: init/upgrade değil, doğrudan **`## Remove akışı`**'nı izle
+(aşağıda).
+
 Bundled dosyalar bu skill dizinindedir: `scaffold.sh`, `stack-profiles.md`, `vibe-checklist-template.md`,
 `legacy-runbook.md`. Aşağıda `SKILL_DIR` = bu SKILL.md'nin bulunduğu dizin.
 
@@ -182,8 +185,10 @@ upgrade akışının hiçbir noktasında "kaldırmak ister misin" diye sorulmaz.
 ### 1. Dry-run (her zaman önce)
 `bash "$SKILL_DIR/scaffold.sh" remove .` — **`--apply` OLMADAN**.
 - Çıktı "Manifest yok" derse: "Bu repoda vibe-setup kurulu değil (ya da zaten kaldırılmış)." de, bitir.
-- SİLİNECEK **ve** ELLE DÜZENLENMİŞ ikisi de `(yok)` ise: "Kaldırılacak bir şey yok." de, bitir —
-  onay isteme.
+- SİLİNECEK bloğu **sadece** `(yok)` satırından ibaretse (altında `.gitignore: "..." satırı` gibi ek
+  bir madde YOKSA) **ve** ELLE DÜZENLENMİŞ de `(yok)` ise: "Kaldırılacak bir şey yok." de, bitir — onay
+  isteme. SİLİNECEK altında dosya listesi boş olsa bile bir `.gitignore` satırı görünüyorsa, bu kısayolu
+  ATLA — normal onay akışına devam et.
 
 ### 2. Göster + onay
 Dry-run çıktısını (SİLİNECEK / ELLE DÜZENLENMİŞ / ÖNCEDEN VARDI / KAPSAM DIŞI) olduğu gibi kullanıcıya
@@ -196,19 +201,20 @@ Evet ise: `bash "$SKILL_DIR/scaffold.sh" remove . --apply`.
 ### 4. Git config temizliği (sadece gerçekten set edilmişse)
 `vibe-remove-report.md`'yi (repo kökü, `--apply` bunu yazdı) oku. Rapor üç git config komutunu
 (`core.hooksPath`, `commit.template`, `vibe.ticketre`) koşulsuz listeler — ama hangisinin bu repoda
-**gerçekten** set edildiğini scaffold.sh bilmiyor (bunları o set etmedi, sen Faz 2'de sorup set
-ettin). Kontrol et:
+**gerçekten** set edildiğini scaffold.sh bilmiyor (bunları o set etmedi — `vibe.ticketre`'yi Faz 2'de
+sorup set ettin, `core.hooksPath`/`commit.template`'i Faz 4'te önerdin; kullanıcı elle de çalıştırmış
+olabilir). Kontrol et:
 ```
-git config --get core.hooksPath
-git config --get commit.template
-git config --get vibe.ticketre
+git config --get --local core.hooksPath
+git config --get --local commit.template
+git config --get --local vibe.ticketre
 ```
 Sadece **boş dönmeyenler** için kullanıcıya sor: "Bu ayarları da kaldırayım mı?" Evet ise sadece
-onaylananlar için `git config --unset <key>` çalıştır — hepsini birden değil, tek tek sorulanı.
+onaylananlar için `git config --local --unset <key>` çalıştır — hepsini birden değil, tek tek sorulanı.
 
 ### 5. Kapanış
-- Kapsam dışı hatırlat: CLAUDE.md, docs/, tests/, .claude/settings.json içeriği elle gözden
-  geçirilmeli — bunlara hiç dokunulmadı.
+- Kapsam dışı hatırlat: CLAUDE.md, docs/, tests/, .claude/settings.json içeriği, vibe-checklist.md elle
+  gözden geçirilmeli — bunlara hiç dokunulmadı.
 - `vibe-remove-report.md`'nin repo kökünde kalıcı kayıt olarak durduğunu söyle (silinmez, bu işlemin
   tek receipt'i).
 
