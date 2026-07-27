@@ -44,8 +44,11 @@ Detay: [docs/](docs/).
   (bir kez düşer, drift normal: settings.json/gitmessage/docs-README/PR). Yeni managed dosya = `managed_paths`
   + `render_artifact` + `artifact_class` + `artifact_changed_in` (DÖRT yer).
 - **`.vibe-setup.json` jq-suz** grep/awk ile parse (kontrollü flat şekil — tek-satır-per-entry). `write_manifest`
-  body'yi ÖNCE kurar SONRA yazar: `> file` redirect'i trunc'lar; CONFLICT'lerin eski sha'sı önce okunmalı
-  (yoksa kullanıcı edit'i "blessed" olur → sonraki upgrade ezer).
+  body'yi ÖNCE kurar SONRA yazar: `> file` redirect'i trunc'lar; eski değerler önce okunmalı. `write_manifest`
+  `init`/`upgrade`/`init-cursor`/`init-gemini` DÖRDÜNDEN de çağrılır — bu yüzden sha/v/vibeVersion varsayılanı
+  **koru**dur: sadece `WRITTEN_PATHS`'te olan (bu çalıştırmada gerçekten yazılan) yollar tazelenir, gerisi
+  manifestteki önceki değeri korur (yoksa örn. `init-gemini` arada elle düzenlenmiş bir dosyayı "blessed" eder →
+  `remove` onu güvenle silinebilir sanır, ya da sonraki `upgrade` CONFLICT'i ezer).
 - **Üretilen dosyalar Türkçe.** İng. ekip için şablonları çevir.
 - **fmt-scope:** go/node/python/ruby/php/shell → sadece staged (eski dirt temiz commit'i bloklamaz);
   java/rust/dotnet → repo-geneli, advisory; asıl enforcement CI.
