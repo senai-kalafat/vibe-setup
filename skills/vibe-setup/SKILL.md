@@ -129,9 +129,6 @@ Onaylanan her madde için:
   - **Sadece projeye-özgü MCP'yi repoya sabitle** — bu projenin DB'si, iç API doküman MCP'si, Jira board'u
     gibi ekibin ortak kullandığı, domaine bağlı sunucular. Kullanıcıya **"ekibe sabitlenecek projeye-özgü
     MCP var mı?"** diye sor; saydığını pin'le. İki ürünü preselect etme.
-  - **Evrensel kişisel araçları repoya GÖMME** (context-mode, context7 vb. — context penceresi/doküman
-    yardımcıları). Projeden bağımsız faydalılar → `~/.claude/settings.json` (user-global) öner; repo-pin'lersen
-    global'i olanda mükerrer, olmayana dayatma + marketplace erişimi şartı olur.
 
 ### 5. Doğrula
 - Üretilen her şeyi çalıştırarak doğrula: test (`TEST`), fmt (`FMT`), build (`BUILD`), hook kuru-çalıştırma.
@@ -160,12 +157,29 @@ Onaylanan her madde için:
   | llms.txt / docs | `<TODO>` placeholder'ları doldur |
   | .gitmessage | `<TICKET-KEY>` formatını projeye uyarla |
   | .claude/settings.json | plugin enable / deny yolları onayı (gerekirse) |
+  | Codex CLI / Gemini CLI (Antigravity dışı) / Kimi Code | context-mode MCP kaydı (opsiyonel — zorunlu değil) |
   | … | (sadece gerçekten eksik/insan-gerektiren satırlar) |
 
   Sadece **açık kalan** maddeleri listele; tamamlananları koyma.
   - **Classifier-bloklanan satırlar** (permissions.allow/deny, plugin enable, MCP pin) için: tabloda
     "snippet'i ekle" demekle yetinme — **paste-hazır snippet'i tablonun hemen altına göm** (hangi dosya,
     hangi anahtar, tam içerik). Aksiyon kendi içinde tamamlanabilir olmalı.
+  - **Codex CLI / Gemini CLI (Antigravity dışı) / Kimi Code için context-mode:** zorunlu değil (Faz 3
+    sadece Claude/Cursor/Antigravity'yi zorunlu kurar) — satır tabloda kalıyorsa paste-hazır snippet'i
+    tablonun hemen altına göm:
+    - Codex CLI (`~/.codex/config.toml`, `[mcp_servers]` bölümü):
+      ```toml
+      [mcp_servers.context-mode]
+      command = "context-mode"
+      ```
+    - Gemini CLI (`~/.gemini/settings.json`, `mcpServers`):
+      ```json
+      "mcpServers": { "context-mode": { "command": "context-mode" } }
+      ```
+    - Kimi Code (`~/.kimi-code/mcp.json`, `mcpServers`):
+      ```json
+      "mcpServers": { "context-mode": { "command": "context-mode" } }
+      ```
 
 - **Token raporu:** süreç maliyetli değilse kullanıcıya **`/cost`** çalıştırmasını öner (Claude Code'un
   built-in kesin token/maliyet komutu). Skill kendi token sayamaz — uydurma sayı verme; `/cost`'a yönlendir.
