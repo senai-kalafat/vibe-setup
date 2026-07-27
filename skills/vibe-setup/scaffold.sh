@@ -7,6 +7,8 @@
 #   scaffold.sh init-gemini [DIR] → drop Gemini CLI context file (GEMINI.md → @CLAUDE.md import)
 #   scaffold.sh upgrade [DIR]     → re-apply changed managed templates to an already-set-up repo
 #                                   (sha drift → UPDATE untouched / ADD missing / CONFLICT human-edited; never clobbers)
+#   scaffold.sh remove [DIR] [--apply] → dry-run (default) or actually delete: only paths vibe-setup
+#                                   created AND that are still unchanged since creation; never LLM content
 #   scaffold.sh profile [DIR]     → print only the detected stack profile (machine-readable)
 #
 # The LLM-driven part (filling CLAUDE.md prose, real tests, deny paths, CONFLICT merges) is the SKILL's job;
@@ -17,8 +19,16 @@ set -euo pipefail
 # plugin.json semver'i ayrı (marketplace); bu sayı upgrade/migration anahtarıdır.
 VIBE_VERSION=4
 
-CMD="${1:-audit}"
-DIR="${2:-.}"
+APPLY=0
+ARGS=()
+for a in "$@"; do
+  case "$a" in
+    --apply) APPLY=1 ;;
+    *) ARGS+=("$a") ;;
+  esac
+done
+CMD="${ARGS[0]:-audit}"
+DIR="${ARGS[1]:-.}"
 cd "$DIR"
 
 # ---------------------------------------------------------------- stack detection + profile
@@ -84,6 +94,11 @@ managed_paths() {
     .gitmessage .githooks/pre-commit .githooks/commit-msg .claude/settings.json "$(pr_template_path)"
 }
 managed_present() { local p; for p in $(managed_paths); do [ -e "$p" ] && return 0; done; return 1; }
+# init-cursor/init-gemini'nin düşürdüğü "extra" dosyalar — managed_paths'e GİRMEZ (versiyon/drift takibi yok,
+# audit satırı yok), ama remove'un provenance'ı için manifestin ayrı extras bölümünde kaydedilir.
+extra_paths() {
+  printf '%s\n' .cursor/rules/project.mdc .cursorrules GEMINI.md
+}
 # Her artifact en son hangi VIBE_VERSION'da değişti (stamp + manifest v + upgrade raporu için).
 artifact_changed_in() { case "$1" in
   .githooks/pre-commit) echo 2 ;;   # v2: sed→bash literal-replace (node SRC_RE `|` delimiter çakışması fix)
@@ -324,31 +339,79 @@ EOF
 # ---------------------------------------------------------------- version manifest (.vibe-setup.json)
 manifest_version() { [ -f .vibe-setup.json ] && grep -oE '"vibeVersion"[[:space:]]*:[[:space:]]*[0-9]+' .vibe-setup.json | grep -oE '[0-9]+' | head -1; }
 manifest_sha()     { [ -f .vibe-setup.json ] && grep -F "\"$1\":" .vibe-setup.json | grep -oE '"sha"[[:space:]]*:[[:space:]]*"[0-9]+"' | grep -oE '[0-9]+' | head -1; }
+manifest_v()       { [ -f .vibe-setup.json ] && grep -F "\"$1\":" .vibe-setup.json | grep -oE '"v"[[:space:]]*:[[:space:]]*[0-9]+' | grep -oE '[0-9]+' | head -1; }
+manifest_created() { [ -f .vibe-setup.json ] && grep -F "\"$1\":" .vibe-setup.json | grep -oE '"created"[[:space:]]*:[[:space:]]*(true|false)' | grep -oE 'true|false' | head -1; }
+manifest_gitignore_line() { [ -f .vibe-setup.json ] && grep -oE '"gitignoreLine"[[:space:]]*:[[:space:]]*"[^"]*"' .vibe-setup.json | sed -E 's/.*:[[:space:]]*"([^"]*)"/\1/' | head -1; }
 
-CONFLICT_PATHS=""   # upgrade doldurur; manifest bu dosyaların ESKİ sha'sını korur (kullanıcı edit'i "blessed" olmasın)
+WRITTEN_PATHS=""    # write_managed/write_extra + upgrade'in UPDATE dalı BU ÇALIŞTIRMADA gerçekten yazdığı yolları
+                    # doldurur. sha/v için TEK doğru "bu çalıştırma neyi değiştirdi" sinyali — write_manifest her
+                    # komuttan (init/upgrade/init-cursor/init-gemini) çağrıldığı için, bunun DIŞINDAKİ her yol
+                    # manifestteki ÖNCEKİ değerini korur; yoksa örn. init-cursor, arada elle düzenlenmiş bir
+                    # managed dosyayı "blessed" ederdi (remove onu güvenle silinebilir sanırdı — VERİ KAYBI).
+NEW_PATHS=""        # write_managed/write_extra bu ÇALIŞTIRMADA "NEW" basılan yolları doldurur (created:true tespiti için)
+GITIGNORE_LINE=""   # init bu ÇALIŞTIRMADA .gitignore'a satır eklediyse doldurur; boşsa write_manifest eski kaydı korur
+STAMP_VERSION=0     # sadece init/upgrade 1 yapar — repo'nun "kurulu sürüm" imzasının sahibi bunlar; init-cursor/
+                    # init-gemini eski vibeVersion'ı korur (yoksa audit'in UPDATE_AVAILABLE sinyali kaybolur)
 sha_for_manifest() {
-  case " $CONFLICT_PATHS " in
-    *" $1 "*) manifest_sha "$1" 2>/dev/null || sha_of_path "$1" ;;
-    *) sha_of_path "$1" ;;
+  case " $WRITTEN_PATHS " in
+    *" $1 "*) sha_of_path "$1" ;;
+    *) manifest_sha "$1" 2>/dev/null || sha_of_path "$1" ;;
+  esac
+}
+v_for_manifest() {
+  case " $WRITTEN_PATHS " in
+    *" $1 "*) artifact_changed_in "$1" ;;
+    *)
+      local prior; prior="$(manifest_v "$1" 2>/dev/null || true)"
+      if [ -n "$prior" ]; then echo "$prior"; else artifact_changed_in "$1"; fi
+      ;;
+  esac
+}
+# created bir kez set edilince asla flip olmaz: manifestte zaten kayıtlıysa onu koru (CONFLICT'te bile),
+# yoksa bu çalıştırmada NEW basıldıysa true, SKIP basıldıysa (zaten vardı) false.
+created_for_manifest() {
+  local prior; prior="$(manifest_created "$1" 2>/dev/null || true)"
+  if [ -n "$prior" ]; then echo "$prior"; return; fi
+  case " $NEW_PATHS " in
+    *" $1 "*) echo true ;;
+    *) echo false ;;
   esac
 }
 write_manifest() {
   local ts; ts="$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)"
   local paths=() p; for p in $(managed_paths); do [ -e "$p" ] && paths+=("$p"); done
-  # ÖNCE body'yi kur (eski .vibe-setup.json hâlâ dururken sha_for_manifest CONFLICT'lerin eski sha'sını okur),
-  # SONRA tek seferde yaz — yoksa `> file` redirect'i dosyayı baştan trunc eder, eski sha kaybolur.
+  local extras=(); for p in $(extra_paths); do [ -e "$p" ] && extras+=("$p"); done
+  local gi; gi="$GITIGNORE_LINE"
+  [ -z "$gi" ] && gi="$(manifest_gitignore_line 2>/dev/null || true)"
+  local vv="$VIBE_VERSION"
+  if [ "$STAMP_VERSION" != 1 ]; then
+    local priorvv; priorvv="$(manifest_version 2>/dev/null || true)"
+    [ -n "$priorvv" ] && vv="$priorvv"
+  fi
+  # ÖNCE body'yi kur (eski .vibe-setup.json hâlâ dururken sha_for_manifest/v_for_manifest eski değerleri okur),
+  # SONRA tek seferde yaz — yoksa `> file` redirect'i dosyayı baştan trunc eder, eski değerler kaybolur.
   local body; body="$(
     echo "{"
-    echo "  \"vibeVersion\": $VIBE_VERSION,"
+    echo "  \"vibeVersion\": $vv,"
     echo "  \"stack\": \"$STACK\","
     echo "  \"generatedAt\": \"$ts\","
     echo "  \"managed\": {"
     local n=${#paths[@]} i=0 sep
     for p in ${paths[@]+"${paths[@]}"}; do
       i=$((i+1)); sep=","; [ "$i" -eq "$n" ] && sep=""
-      printf '    "%s": { "v": %s, "sha": "%s" }%s\n' "$p" "$(artifact_changed_in "$p")" "$(sha_for_manifest "$p")" "$sep"
+      printf '    "%s": { "v": %s, "sha": "%s", "created": %s }%s\n' "$p" "$(v_for_manifest "$p")" "$(sha_for_manifest "$p")" "$(created_for_manifest "$p")" "$sep"
     done
     echo "  },"
+    echo "  \"extras\": {"
+    local en=${#extras[@]} ei=0 esep
+    for p in ${extras[@]+"${extras[@]}"}; do
+      ei=$((ei+1)); esep=","; [ "$ei" -eq "$en" ] && esep=""
+      printf '    "%s": { "sha": "%s", "created": %s }%s\n' "$p" "$(sha_for_manifest "$p")" "$(created_for_manifest "$p")" "$esep"
+    done
+    echo "  },"
+    if [ -n "$gi" ]; then
+      printf '  "gitignoreLine": "%s",\n' "$gi"
+    fi
     echo "  \"llm\": [\"CLAUDE.md\", \"docs/\", \"tests/\"]"
     echo "}"
   )"
@@ -361,15 +424,19 @@ write_managed() {  # $1 = managed path
   mkdir -p "$(dirname "$1")"
   render_artifact "$1" > "$1"
   case "$1" in .githooks/*) chmod +x "$1" ;; esac
+  NEW_PATHS="$NEW_PATHS $1"
+  WRITTEN_PATHS="$WRITTEN_PATHS $1"
   echo "  NEW   $1"
 }
 
 init() {
   echo "vibe-setup init — $(pwd)  (stack: $STACK, engine v$VIBE_VERSION)"
+  STAMP_VERSION=1
   local p; for p in $(managed_paths); do write_managed "$p"; done
 
   if [ -f .gitignore ] && ! grep -q 'settings.local.json' .gitignore; then
     printf '\n.claude/settings.local.json\n' >> .gitignore; echo "  EDIT  .gitignore (+settings.local.json)"
+    GITIGNORE_LINE=".claude/settings.local.json"
   fi
 
   write_manifest
@@ -430,9 +497,10 @@ upgrade() {
   done
   rm -f "$tmp"
 
-  CONFLICT_PATHS="${conf[*]:-}"
+  STAMP_VERSION=1
+  WRITTEN_PATHS="${upd[*]:-}"
   run_migrations "$applied"
-  write_manifest   # vibeVersion→$VIBE_VERSION; UPDATE'lerin yeni sha'sı, CONFLICT'lerin ESKİ sha'sı korunur
+  write_manifest   # vibeVersion→$VIBE_VERSION; UPDATE'lerin (WRITTEN_PATHS) yeni sha'sı, geri kalanının ESKİ sha'sı korunur
 
   echo
   printf 'UPDATE=%s\n'   "$(IFS=,; echo "${upd[*]:-}")"
@@ -460,10 +528,14 @@ EOF
 # Cursor — tek doğruluk kaynağı CLAUDE.md. Docs: docs/.
 # (Modern format: .cursor/rules/*.mdc — bu dosya geriye dönük uyumluluk için.)
 EOF
+  write_manifest
 }
 write_extra() {  # $1 path (content on stdin) — never overwrite. Shared by init-cursor, init-gemini.
   if [ -e "$1" ]; then echo "  SKIP  $1 (var)"; return; fi
-  mkdir -p "$(dirname "$1")"; cat > "$1"; echo "  NEW   $1"
+  mkdir -p "$(dirname "$1")"; cat > "$1"
+  NEW_PATHS="$NEW_PATHS $1"
+  WRITTEN_PATHS="$WRITTEN_PATHS $1"
+  echo "  NEW   $1"
 }
 
 init_gemini() {
@@ -472,6 +544,113 @@ init_gemini() {
 # Gemini CLI context — tek doğruluk kaynağı CLAUDE.md
 @CLAUDE.md
 EOF
+  write_manifest
+}
+
+# ---------------------------------------------------------------- remove (dry-run varsayılan; --apply gerçek siler)
+remove() {
+  echo "vibe-setup remove — $(pwd)  $([ "$APPLY" = 1 ] && echo '(--apply)' || echo '(dry-run)')"
+  if [ ! -f .vibe-setup.json ]; then
+    echo "Manifest yok — vibe-setup bu repoda kurulu değil (ya da zaten kaldırılmış)."
+    return 0
+  fi
+
+  local p created cursha mansha
+  local to_remove=() kept_edited=() pre_existing_count=0
+
+  for p in $(managed_paths) $(extra_paths); do
+    [ -e "$p" ] || continue
+    created="$(manifest_created "$p" 2>/dev/null || true)"
+    if [ "$created" != "true" ]; then
+      pre_existing_count=$((pre_existing_count+1))
+      continue
+    fi
+    mansha="$(manifest_sha "$p" 2>/dev/null || true)"
+    cursha="$(sha_of_path "$p")"
+    if [ "$cursha" = "$mansha" ]; then to_remove+=("$p"); else kept_edited+=("$p"); fi
+  done
+
+  local gi gi_remove=0
+  gi="$(manifest_gitignore_line 2>/dev/null || true)"
+  if [ -n "$gi" ] && [ -f .gitignore ] && grep -qxF "$gi" .gitignore; then gi_remove=1; fi
+
+  echo
+  echo "SİLİNECEK (vibe-setup yarattı, değişmemiş):"
+  if [ ${#to_remove[@]} -eq 0 ]; then echo "  (yok)"; else printf '  - %s\n' ${to_remove[@]+"${to_remove[@]}"}; fi
+  [ "$gi_remove" = 1 ] && echo "  - .gitignore: \"$gi\" satırı"
+
+  echo
+  echo "ELLE DÜZENLENMİŞ — DOKUNULMAYACAK:"
+  if [ ${#kept_edited[@]} -eq 0 ]; then echo "  (yok)"; else printf '  - %s\n' ${kept_edited[@]+"${kept_edited[@]}"}; fi
+
+  echo
+  echo "ÖNCEDEN VARDI — hiç dokunulmadı: $pre_existing_count dosya"
+  echo
+  echo "KAPSAM DIŞI — elle gözden geçir: CLAUDE.md, docs/, tests/, .claude/settings.json içeriği, vibe-checklist.md"
+  echo
+  echo "(varsa) git config temizliği — önerilir, otomatik yapılmadı:"
+  echo "  git config --unset core.hooksPath"
+  echo "  git config --unset commit.template"
+  echo "  git config --unset vibe.ticketre"
+
+  if [ "$APPLY" != 1 ]; then
+    echo
+    echo "Dry-run — hiçbir şey silinmedi. Uygulamak için: scaffold.sh remove . --apply"
+    return 0
+  fi
+
+  for p in ${to_remove[@]+"${to_remove[@]}"}; do rm -f "$p"; done
+  if [ "$gi_remove" = 1 ]; then
+    # grep -v exits 1 (no output) when $gi was the ONLY line — that's a valid empty
+    # result here, not a failure, so don't gate the mv on grep's exit status.
+    grep -vxF "$gi" .gitignore > .gitignore.tmp || true
+    mv .gitignore.tmp .gitignore
+  fi
+  local d
+  for p in ${to_remove[@]+"${to_remove[@]}"}; do
+    d="$(dirname "$p")"
+    while [ "$d" != "." ] && [ -d "$d" ]; do
+      rmdir "$d" 2>/dev/null || break
+      d="$(dirname "$d")"
+    done
+  done
+
+  {
+    echo "# vibe-remove report — $(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)"
+    echo
+    echo "## Silinen dosyalar"
+    if [ ${#to_remove[@]} -eq 0 ] && [ "$gi_remove" != 1 ]; then
+      echo "(yok)"
+    else
+      for p in ${to_remove[@]+"${to_remove[@]}"}; do echo "- $p"; done
+      [ "$gi_remove" = 1 ] && echo "- .gitignore: \"$gi\" satırı"
+    fi
+    echo
+    echo "## Elle düzenlenmiş — dokunulmadı"
+    if [ ${#kept_edited[@]} -eq 0 ]; then
+      echo "(yok)"
+    else
+      for p in ${kept_edited[@]+"${kept_edited[@]}"}; do echo "- $p — oluşturulduğundan beri değişmiş, silinmedi"; done
+    fi
+    echo
+    echo "## Pre-existing — hiç dokunulmadı"
+    echo "$pre_existing_count dosya vibe-setup'tan önce zaten vardı, elle silinmedi."
+    echo
+    echo "## Kapsam dışı — elle gözden geçir"
+    echo "CLAUDE.md, docs/, tests/, .claude/settings.json içeriği, vibe-checklist.md (LLM/kullanıcı tarafından dolduruldu, otomatik silinmez)."
+    echo
+    echo "## (varsa) git config temizliği — önerilir, otomatik yapılmadı"
+    echo '```'
+    echo "git config --unset core.hooksPath"
+    echo "git config --unset commit.template"
+    echo "git config --unset vibe.ticketre"
+    echo '```'
+  } > vibe-remove-report.md
+
+  rm -f .vibe-setup.json
+
+  echo
+  echo "Silindi. Rapor: vibe-remove-report.md"
 }
 
 case "$CMD" in
@@ -480,6 +659,7 @@ case "$CMD" in
   init-cursor) init_cursor ;;
   init-gemini) init_gemini ;;
   upgrade) upgrade ;;
+  remove)  remove ;;
   profile) printf 'STACK=%s\nMODULE_DIR=%s\nFMT=%s\nLINT=%s\nTEST=%s\nBUILD=%s\nSRC_RE=%s\nTEST_FIND=%s\nFMT_FILE_OK=%s\nVIBE_VERSION=%s\n' "$STACK" "$MODULE_DIR" "$FMT" "$LINT" "$TEST" "$BUILD" "$SRC_RE" "$TEST_FIND" "$FMT_FILE_OK" "$VIBE_VERSION" ;;
-  *) echo "kullanım: scaffold.sh {audit|init|init-cursor|init-gemini|upgrade|profile} [DIR]" >&2; exit 2 ;;
+  *) echo "kullanım: scaffold.sh {audit|init|init-cursor|init-gemini|upgrade|remove|profile} [DIR] [--apply]" >&2; exit 2 ;;
 esac

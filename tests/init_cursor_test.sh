@@ -18,6 +18,9 @@ grep -q 'CLAUDE.md' "$work/.cursor/rules/project.mdc" 2>/dev/null && ok "project
 grep -q 'CLAUDE.md' "$work/.cursorrules" 2>/dev/null && ok ".cursorrules CLAUDE.md'ye yonlendirir" || bad ".cursorrules CLAUDE.md referansi yok"
 grep -q 'alwaysApply: true' "$work/.cursor/rules/project.mdc" 2>/dev/null && ok "project.mdc frontmatter alwaysApply" || bad "project.mdc frontmatter eksik"
 printf '%s' "$out1" | grep -q 'NEW' && ok "ilk init-cursor NEW basar" || bad "ilk init-cursor NEW basmadi"
+[ -f "$work/.vibe-setup.json" ] && ok "init-cursor tek basina manifest yazar" || bad "init-cursor manifest yazmadi"
+grep -q '".cursor/rules/project.mdc": { "sha": "[0-9]*", "created": true' "$work/.vibe-setup.json" 2>/dev/null && ok "extras: project.mdc created:true kayitli" || bad "extras: project.mdc manifest kaydi yok/yanlis"
+grep -q '".cursorrules": { "sha": "[0-9]*", "created": true' "$work/.vibe-setup.json" 2>/dev/null && ok "extras: .cursorrules created:true kayitli" || bad "extras: .cursorrules manifest kaydi yok/yanlis"
 
 # 2. ezmezlik — kullanıcı düzenlemesi ikinci çalıştırmada korunmalı (SKIP)
 printf '\n# KULLANICI OZEL KURAL\n' >> "$work/.cursorrules"

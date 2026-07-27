@@ -48,6 +48,7 @@ grep -q "\"sha\": \"$orig\"" "$d/.vibe-setup.json" && ok "manifest eski sha'yı 
 out2="$(bash "$SCAFFOLD" upgrade "$d" 2>/dev/null)"
 [ "$(field "$out2" CONFLICT)" = ".githooks/pre-commit" ] && ok "2. upgrade hâlâ CONFLICT" || bad "2. upgrade conflict düştü: U='$(field "$out2" UPDATE)'"
 grep -q 'KULLANICI OZEL SATIR' "$d/.githooks/pre-commit" && ok "2. upgrade'de de ezilmedi" || bad "2. upgrade kullanıcı edit'ini ezdi!"
+grep -q '".githooks/pre-commit": { "v": 2, "sha": "[0-9]*", "created": true' "$d/.vibe-setup.json" && ok "CONFLICT'te de created:true korunur" || bad "created flag CONFLICT'te bozuldu"
 
 # E. eksik dosya → ADD
 d="$(fresh E)"
@@ -92,6 +93,24 @@ if command -v git >/dev/null 2>&1; then
 else
   echo "  skip: git yok — migration testi atlandı"
 fi
+
+# J. REGRESYON: write_manifest DIGER komutlardan (init-cursor) cagrildiginda CONFLICT'i "blessed" etmez
+d="$(fresh J)"
+printf '\n# KULLANICI OZEL SATIR\n' >> "$d/.githooks/pre-commit"
+out="$(bash "$SCAFFOLD" upgrade "$d" 2>/dev/null)"
+[ "$(field "$out" CONFLICT)" = ".githooks/pre-commit" ] && ok "J: ilk upgrade CONFLICT basar" || bad "J: ilk upgrade CONFLICT basmadi"
+bash "$SCAFFOLD" init-cursor "$d" >/dev/null 2>&1
+out2="$(bash "$SCAFFOLD" upgrade "$d" 2>/dev/null)"
+[ "$(field "$out2" CONFLICT)" = ".githooks/pre-commit" ] && ok "J: init-cursor arada calisti, CONFLICT hala koruniyor (blessed olmadi)" || bad "J: init-cursor CONFLICT'i blessledi — clobber riski geri geldi!"
+grep -q 'KULLANICI OZEL SATIR' "$d/.githooks/pre-commit" && ok "J: kullanici edit'i hala duruyor" || bad "J: kullanici edit'i kayboldu"
+
+# K. REGRESYON: init-cursor/init-gemini eski vibeVersion'i bozmaz (UPDATE_AVAILABLE sinyali korunur)
+d="$(fresh K)"
+awk '{ sub(/"vibeVersion": 4/, "\"vibeVersion\": 2"); print }' "$d/.vibe-setup.json" > "$d/.vibe-setup.json.t" && mv "$d/.vibe-setup.json.t" "$d/.vibe-setup.json"
+bash "$SCAFFOLD" init-cursor "$d" >/dev/null 2>&1
+grep -q '"vibeVersion": 2' "$d/.vibe-setup.json" && ok "K: init-cursor eski vibeVersion'i korudu" || bad "K: init-cursor vibeVersion'i yanlislikla guncelledi"
+out3="$(bash "$SCAFFOLD" audit "$d" 2>/dev/null)"
+printf '%s' "$out3" | grep -q 'UPDATE_AVAILABLE=v2->v4' && ok "K: audit hala UPDATE_AVAILABLE basiyor (sinyal kaybolmadi)" || bad "K: UPDATE_AVAILABLE sinyali kayboldu"
 
 echo "upgrade_test: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]
