@@ -147,6 +147,7 @@ audit() {
   elif has_test; then row "$OK" "test suite ($TEST_FIND)"
   else row "$NO" "test suite" "LLM: gerçek test yaz ($STACK)"; fi
   echo "EKLENTİ / HOOK"
+  have context-mode && row "$OK" "context-mode" || row "$NO" "context-mode" "npm install -g context-mode"
   has_file .githooks/pre-commit && row "$OK" ".githooks/pre-commit" || row "$NO" ".githooks/pre-commit" "init düşürür"
   has_file .githooks/commit-msg && row "$OK" ".githooks/commit-msg" || row "$NO" ".githooks/commit-msg" "init düşürür (ticket-key ops: vibe.ticketre)"
   [ -n "$(git_cfg core.hooksPath)" ] && row "$OK" "core.hooksPath" "$(git_cfg core.hooksPath)" || row "$NO" "core.hooksPath" "git config core.hooksPath .githooks"

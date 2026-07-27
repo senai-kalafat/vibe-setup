@@ -17,8 +17,11 @@ before="$(score_of)"
 if printf '%s' "$before" | grep -qE '^SCORE=[0-9]+/[0-9]+$'; then ok "SCORE=N/M formatı ($before)"
 else bad "SCORE formatı yok — gelen '$before'"; fi
 
-# 2. boş repo skoru 0 (hiçbir artefakt yok)
-[ "$(num_of "$before")" = "0" ] && ok "boş repo SCORE payı 0" || bad "boş repo payı 0 değil ($before)"
+# 2. boş repo skoru 0 (context-mode HARİÇ hiçbir artefakt yok — context-mode ortam-bağımlı, repo-bağımsız
+#    bir kontrol olduğundan bu makinede kuruluysa payı 1 olur, kurulu değilse 0)
+expected0=0
+command -v context-mode >/dev/null 2>&1 && expected0=1
+[ "$(num_of "$before")" = "$expected0" ] && ok "boş repo SCORE payı $expected0 (context-mode ortam durumuna göre)" || bad "boş repo payı $expected0 değil ($before)"
 
 # 3. init sonrası audit → skor artmalı (agnostik iskeletler ✅ olur)
 bash "$SCAFFOLD" init "$work" >/dev/null 2>&1
@@ -34,6 +37,14 @@ awk '{ sub(/"vibeVersion": [0-9]+/, "\"vibeVersion\": 1"); print }' "$work/.vibe
 out="$(bash "$SCAFFOLD" audit "$work" 2>/dev/null)"
 printf '%s\n' "$out" | grep -qE '^UPDATE_AVAILABLE=v1->v[0-9]+$' && ok "eski manifest → UPDATE_AVAILABLE=v1->vN" || bad "UPDATE_AVAILABLE sinyali yok/bozuk"
 printf '%s' "$out" | grep -q 'YENİ SÜRÜM VAR' && ok "insan-okur uyarı basıldı" || bad "insan-okur uyarı yok"
+
+# 5. context-mode satırı: makinede kuruluysa ✅, değilse ❌ — hangisi doğruysa onu doğrula
+out5="$(bash "$SCAFFOLD" audit "$work" 2>/dev/null)"
+if command -v context-mode >/dev/null 2>&1; then
+  printf '%s' "$out5" | grep -qE '✅ +context-mode' && ok "context-mode kurulu → ✅ basıyor" || bad "context-mode kurulu ama ✅ basmadı"
+else
+  printf '%s' "$out5" | grep -qE '❌ +context-mode' && ok "context-mode eksik → ❌ basıyor" || bad "context-mode eksik ama ❌ basmadı"
+fi
 
 echo "audit_test: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]
