@@ -7,9 +7,12 @@ description: >
   a real (human + AI) git pre-commit hook (fmt/lint/doc-sync), .claude/settings.json permissions,
   commit/PR templates, and the reusable vibe checklist. Also UPGRADES an already-set-up repo to a newer
   skill version: re-applies changed managed templates (e.g. hook fixes) without clobbering human edits.
+  Also REMOVES what it created (dry-run by default, explicit confirmation before deleting): only
+  vibe-setup-created files that are still unchanged, never pre-existing or hand-edited ones.
   Triggers: "vibe checklist", "vibe-setup", "audit this project for agent readiness", "make this repo
   agent/AI friendly", "set up CLAUDE.md and hooks", "vibe-setup güncelle / yeni sürüme geç", "upgrade
-  vibe-setup", "boş projeyi vibe checklist'e göre kur". Works for Go, Node/TS, Python, Java, Kotlin,
+  vibe-setup", "boş projeyi vibe checklist'e göre kur", "vibe-setup'ı kaldır", "remove vibe-setup",
+  "vibe-remove", "vibe-setup'ı geri al". Works for Go, Node/TS, Python, Java, Kotlin,
   Swift, Rust, Ruby, .NET, PHP, Elixir, and blank repos.
 ---
 
@@ -170,6 +173,44 @@ Manifest'te `llm` listesindekiler; engine **hiç dokunmaz**. Yeni sürüm checkl
 ### 5. Doğrula + kapat
 - `audit` tekrar → SCORE. Üretilen/merge edilen her şeyi çalıştırarak doğrula (test/fmt/hook).
 - Kısa özet: ne otomatik güncellendi (UPDATE/ADD/MIGRATED), CONFLICT'ler nasıl merge edildi, llm tarafında ne eklendi.
+
+## Remove akışı (vibe-setup'ı kaldır)
+
+Kullanıcı **açıkça** "kaldır"/"remove"/"geri al" dediğinde çalışır — asla proaktif önerilmez, audit/init/
+upgrade akışının hiçbir noktasında "kaldırmak ister misin" diye sorulmaz.
+
+### 1. Dry-run (her zaman önce)
+`bash "$SKILL_DIR/scaffold.sh" remove .` — **`--apply` OLMADAN**.
+- Çıktı "Manifest yok" derse: "Bu repoda vibe-setup kurulu değil (ya da zaten kaldırılmış)." de, bitir.
+- SİLİNECEK **ve** ELLE DÜZENLENMİŞ ikisi de `(yok)` ise: "Kaldırılacak bir şey yok." de, bitir —
+  onay isteme.
+
+### 2. Göster + onay
+Dry-run çıktısını (SİLİNECEK / ELLE DÜZENLENMİŞ / ÖNCEDEN VARDI / KAPSAM DIŞI) olduğu gibi kullanıcıya
+göster — zaten insan-okur, yeniden formatlama yok. Açıkça sor: **"Listelenen dosyaları sileyim mi?"**
+Hayır ise dur (dry-run zaten hiçbir şey silmedi).
+
+### 3. Uygula
+Evet ise: `bash "$SKILL_DIR/scaffold.sh" remove . --apply`.
+
+### 4. Git config temizliği (sadece gerçekten set edilmişse)
+`vibe-remove-report.md`'yi (repo kökü, `--apply` bunu yazdı) oku. Rapor üç git config komutunu
+(`core.hooksPath`, `commit.template`, `vibe.ticketre`) koşulsuz listeler — ama hangisinin bu repoda
+**gerçekten** set edildiğini scaffold.sh bilmiyor (bunları o set etmedi, sen Faz 2'de sorup set
+ettin). Kontrol et:
+```
+git config --get core.hooksPath
+git config --get commit.template
+git config --get vibe.ticketre
+```
+Sadece **boş dönmeyenler** için kullanıcıya sor: "Bu ayarları da kaldırayım mı?" Evet ise sadece
+onaylananlar için `git config --unset <key>` çalıştır — hepsini birden değil, tek tek sorulanı.
+
+### 5. Kapanış
+- Kapsam dışı hatırlat: CLAUDE.md, docs/, tests/, .claude/settings.json içeriği elle gözden
+  geçirilmeli — bunlara hiç dokunulmadı.
+- `vibe-remove-report.md`'nin repo kökünde kalıcı kayıt olarak durduğunu söyle (silinmez, bu işlemin
+  tek receipt'i).
 
 ## İlkeler
 - **Önce onay**, sonra üret. Toplu dosya bombardımanı yok.
