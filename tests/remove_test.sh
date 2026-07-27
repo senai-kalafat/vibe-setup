@@ -24,6 +24,7 @@ outB="$(bash "$SCAFFOLD" remove "$b" 2>&1)"
 [ -e "$b/.vibe-setup.json" ] && ok "dry-run: manifest silinmedi" || bad "dry-run: manifest silinmis!"
 printf '%s' "$outB" | grep -q 'AGENTS.md' && ok "dry-run: AGENTS.md SİLİNECEK listesinde" || bad "dry-run: AGENTS.md listede degil"
 printf '%s' "$outB" | grep -q 'Dry-run' && ok "dry-run: dry-run notu basildi" || bad "dry-run notu basilmadi"
+[ ! -e "$b/vibe-remove-report.md" ] && ok "dry-run: rapor dosyasi yazilmadi" || bad "dry-run: rapor dosyasi yanlislikla yazildi"
 
 # C. --apply — vibe-setup'ın yarattığı, değişmemiş dosyalar gerçekten silinir; manifest de silinir;
 #    boşalan dizinler (birden fazla iç içe, farklı yollardan) temizlenir
@@ -83,6 +84,23 @@ bash "$SCAFFOLD" remove "$h" --apply >/dev/null 2>&1
 [ -e "$h/.gitignore" ] && ok "--apply (tek satir): .gitignore hala var (kaybolmadi)" || bad "--apply (tek satir): .gitignore kayboldu — CIDDI HATA"
 [ -e "$h/.gitignore" ] && [ ! -s "$h/.gitignore" ] && ok "--apply (tek satir): .gitignore artik bos" || bad "--apply (tek satir): .gitignore bos degil (satir hala duruyor)"
 [ ! -e "$h/.gitignore.tmp" ] && ok "--apply (tek satir): .gitignore.tmp artigi kalmadi" || bad "--apply (tek satir): .gitignore.tmp artigi kaldi"
+
+# H. REGRESYON: --apply — elle duzenleme sonrasi ARADA baska bir vibe-setup komutu (init-gemini) calissa bile
+#    edit hala korunur (write_manifest ARADAKI komuttan cagrildiginda edit'i "blessed" etmemeli)
+hh="$tmp/apply-edited-then-other-cmd"; mkdir -p "$hh"; echo '{}' > "$hh/package.json"
+bash "$SCAFFOLD" init "$hh" >/dev/null 2>&1
+printf '\n# KULLANICI OZEL SATIR\n' >> "$hh/AGENTS.md"
+bash "$SCAFFOLD" init-gemini "$hh" >/dev/null 2>&1
+bash "$SCAFFOLD" remove "$hh" --apply >/dev/null 2>&1
+[ -e "$hh/AGENTS.md" ] && grep -q 'KULLANICI OZEL SATIR' "$hh/AGENTS.md" 2>/dev/null && ok "--apply: arada init-gemini calissa bile elle duzenlenmis AGENTS.md korunur" || bad "--apply: ARADAKI KOMUT EDIT'I BLESSLEDI, AGENTS.md silindi — VERI KAYBI"
+
+# I. REGRESYON: --apply — LLM'in doldurdugu settings.json arada upgrade calissa bile korunur
+i="$tmp/apply-settings-then-upgrade"; mkdir -p "$i"; echo '{}' > "$i/package.json"
+bash "$SCAFFOLD" init "$i" >/dev/null 2>&1
+echo '{ "permissions": { "allow": ["npm test"], "deny": [] } }' > "$i/.claude/settings.json"
+bash "$SCAFFOLD" upgrade "$i" >/dev/null 2>&1
+bash "$SCAFFOLD" remove "$i" --apply >/dev/null 2>&1
+grep -q 'npm test' "$i/.claude/settings.json" 2>/dev/null && ok "--apply: arada upgrade calissa bile LLM'in doldurdugu settings.json korunur" || bad "--apply: ARADAKI UPGRADE SETTINGS.JSON'U BLESSLEDI — LLM ICERIGI SILINDI"
 
 echo "remove_test: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]
