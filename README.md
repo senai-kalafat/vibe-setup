@@ -15,11 +15,13 @@ Desteklenen: Go, Node/TS, Python, Java, Kotlin, Swift, Rust, Ruby, .NET, PHP, El
 
 - **Deterministik motor** — [scaffold.sh](skills/vibe-setup/scaffold.sh): saf bash, tek opsiyonel
   dep `jq` (yoksa audit yalnız izin satırlarını atlar). Stack tespiti, agnostik iskelet, komut
-  substitüsyonu, sürümlü drift tespiti. Beş komut:
+  substitüsyonu, sürümlü drift tespiti. Yedi komut:
   - `audit` — hazırlık tablosu (✅/❌/—) + makine-okur `SCORE=N/M` footer
   - `init` — eksik agnostik dosyaları düşürür; **var olanı asla ezmez** (SKIP, idempotent)
   - `init-cursor` — Cursor kural dosyaları (`.cursor/rules/project.mdc` + `.cursorrules` → CLAUDE.md)
+  - `init-gemini` — Gemini CLI context dosyası (`GEMINI.md` → `@CLAUDE.md` importu)
   - `upgrade` — zaten kurulu repoyu yeni sürüme taşır (sha-drift → UPDATE/ADD/CONFLICT; asla ezmez)
+  - `remove` — vibe-setup'ın yarattığı, hâlâ değişmemiş dosyaları kaldırır (dry-run varsayılan, `--apply` gerçek siler)
   - `profile` — tespit edilen stack profilini basar (9 alan + `VIBE_VERSION`, makine-okur)
 - **Akıllı kat (LLM)** — [SKILL.md](skills/vibe-setup/SKILL.md) akışı: repoyu **okuyup** CLAUDE.md
   prose, gerçek geçen test, `deny` yollarını üretir. Uydurmaz — gerçek koddan çıkarır.
@@ -117,9 +119,10 @@ Cursor'da Claude Code plugin marketplace yok — skill iki parçayla kullanılı
    olarak kopyala. Cursor agent orkestrasyon akışını izler (audit → onay → iskelet → içerik → doğrula).
 3. **Deterministik motor (Cursor'sız da):** `scaffold.sh` saf bash, dış dep yok — doğrudan çalıştır:
    ```
-   bash /yol/vibe-setup/skills/vibe-setup/scaffold.sh audit .   # audit | init | init-cursor | profile
+   bash /yol/vibe-setup/skills/vibe-setup/scaffold.sh audit .   # audit | init | init-cursor | init-gemini | upgrade | remove | profile
    ```
-   `init-cursor` hedef repoya `.cursor/rules/project.mdc` + `.cursorrules` düşürür (CLAUDE.md'ye yönlendirir).
+   `init-cursor` hedef repoya `.cursor/rules/project.mdc` + `.cursorrules` düşürür (CLAUDE.md'ye yönlendirir);
+   `init-gemini` aynı şekilde `GEMINI.md` düşürür. `remove` kurulanları geri alır (önce dry-run, sonra `--apply`).
 
 > AGENTS.md tek-kaynak ayna olduğundan, Claude tarafıyla kurulan bir repoyu Cursor da `init-cursor`
 > olmadan okuyabilir; `init-cursor` sadece Cursor-yerel kural dosyalarını ekler.
@@ -243,7 +246,7 @@ Skill bu maddelere göre denetler ve dolu halini repo köküne `vibe-checklist.m
 .claude-plugin/{plugin.json, marketplace.json}
 skills/vibe-setup/
   SKILL.md                  # orchestration
-  scaffold.sh               # audit / init / init-cursor / profile
+  scaffold.sh               # audit / init / init-cursor / init-gemini / upgrade / remove / profile
   stack-profiles.md         # 11 ekosistem komut tablosu (tek stack-bağımlı katman)
   vibe-checklist-template.md
   legacy-runbook.md         # sadece legacy repolarda okunur
