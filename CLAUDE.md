@@ -20,8 +20,8 @@ Repoyu AI/agent geliştirmeye hazırlayan Claude Code plugin'i. Audit + scaffold
   düzenlenmişleri CONFLICT'e bırakır (asla ezmez). Akış: [SKILL.md](skills/vibe-setup/SKILL.md) `## Upgrade akışı`.
 
 Dosyalar:
-- `skills/vibe-setup/SKILL.md` — orkestrasyon akışı (init + upgrade)
-- `skills/vibe-setup/scaffold.sh` — motor (`audit|init|init-cursor|init-gemini|upgrade|profile`)
+- `skills/vibe-setup/SKILL.md` — orkestrasyon akışı (init + upgrade + remove)
+- `skills/vibe-setup/scaffold.sh` — motor (`audit|init|init-cursor|init-gemini|upgrade|remove|profile`)
 - `skills/vibe-setup/stack-profiles.md` — stack komut tablosu (insan-okur ayna)
 - `skills/vibe-setup/{vibe-checklist-template,legacy-runbook}.md`
 - `.claude-plugin/{plugin,marketplace}.json` — plugin manifest

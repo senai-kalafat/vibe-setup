@@ -12,7 +12,7 @@ upgrade) ve akıllı katman (`SKILL.md` akışını izleyen LLM — CLAUDE.md pr
 
 - [README](README.md): kurulum (Claude Code + Cursor), kullanım, tasarım ve checklist gerekçeleri
 - [CLAUDE.md](CLAUDE.md): komutlar, mimari, gotchas, git workflow — agent'ların tek doğruluk kaynağı
-- [SKILL.md](skills/vibe-setup/SKILL.md): LLM orkestrasyon akışı (init 6 faz + upgrade 5 adım)
+- [SKILL.md](skills/vibe-setup/SKILL.md): LLM orkestrasyon akışı (init 6 faz + upgrade 5 adım + remove akışı)
 - [stack-profiles](skills/vibe-setup/stack-profiles.md): ekosistem başına fmt/lint/test/build komut tablosu
 - [docs/](docs/README.md): mimari genel bakış + ADR'ler + domain sözlüğü
 
