@@ -64,5 +64,18 @@ nogit="$tmp/no-git"; mkdir -p "$nogit"
 out="$(bash "$UPDATE_SCRIPT" "$nogit" 2>&1)"; code=$?
 [ "$code" -ne 0 ] && ok ".git yokken nonzero exit" || bad ".git yokken exit 0 (hata vermeliydi)"
 
+# 7. ahead-case: origin v1.1.0'i taglemis DURUMDAYKEN klonlanir (N2 zaten HEAD'de), sonra kendi
+#    lokal commit'ini N2'nin USTUNE atar -> local, tag'in (v1.1.0=N2) torunu -> "zaten daha yeni"
+#    no-op beklenir, exit 0, HEAD DEGISMEMELI (guncelleme yapilmamali)
+ahead_case="$tmp/ahead-case"; git clone -q "$origin" "$ahead_case" 2>/dev/null
+echo "ahead lokal commit" >> "$ahead_case/f.txt"
+git_c -C "$ahead_case" add -A && git_c -C "$ahead_case" commit -q -m "henuz taglenmemis lokal commit"
+before_ahead="$(git -C "$ahead_case" rev-parse HEAD)"
+out="$(bash "$UPDATE_SCRIPT" "$ahead_case" 2>&1)"; code=$?
+[ "$code" -eq 0 ] && ok "tag'den ileri kopyada exit 0" || bad "tag'den ileri kopyada exit $code"
+printf '%s' "$out" | grep -qi 'daha yeni' && ok "tag'den ileri: bilgilendirici mesaj basildi" || bad "tag'den ileri: mesaj yok"
+after_ahead="$(git -C "$ahead_case" rev-parse HEAD)"
+[ "$before_ahead" = "$after_ahead" ] && ok "tag'den ileri kopyada HEAD degismedi (no-op)" || bad "tag'den ileri kopyada HEAD degisti"
+
 echo "vibe_update_test: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]
