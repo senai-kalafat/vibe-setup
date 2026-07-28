@@ -5,6 +5,7 @@
 #   scaffold.sh init  [DIR]       → drop missing agnostic skeletons (never overwrites) + write .vibe-setup.json
 #   scaffold.sh init-cursor [DIR] → drop Cursor rules (.cursor/rules/*.mdc + .cursorrules → CLAUDE.md)
 #   scaffold.sh init-gemini [DIR] → drop Gemini CLI context file (GEMINI.md → @CLAUDE.md import)
+#   scaffold.sh init-aider [DIR]  → drop Aider config (.aider.conf.yml → read: AGENTS.md)
 #   scaffold.sh upgrade [DIR]     → re-apply changed managed templates to an already-set-up repo
 #                                   (sha drift → UPDATE untouched / ADD missing / CONFLICT human-edited; never clobbers)
 #   scaffold.sh remove [DIR] [--apply] → dry-run (default) or actually delete: only paths vibe-setup
@@ -97,7 +98,7 @@ managed_present() { local p; for p in $(managed_paths); do [ -e "$p" ] && return
 # init-cursor/init-gemini'nin düşürdüğü "extra" dosyalar — managed_paths'e GİRMEZ (versiyon/drift takibi yok,
 # audit satırı yok), ama remove'un provenance'ı için manifestin ayrı extras bölümünde kaydedilir.
 extra_paths() {
-  printf '%s\n' .cursor/rules/project.mdc .cursorrules GEMINI.md
+  printf '%s\n' .cursor/rules/project.mdc .cursorrules GEMINI.md .aider.conf.yml
 }
 # Her artifact en son hangi VIBE_VERSION'da değişti (stamp + manifest v + upgrade raporu için).
 artifact_changed_in() { case "$1" in
@@ -548,6 +549,15 @@ EOF
   write_manifest
 }
 
+init_aider() {
+  echo "vibe-setup init-aider — $(pwd)"
+  write_extra .aider.conf.yml <<'EOF'
+# vibe-setup — Aider AGENTS.md'yi native okumaz; acikca isaretle.
+read: AGENTS.md
+EOF
+  write_manifest
+}
+
 # ---------------------------------------------------------------- remove (dry-run varsayılan; --apply gerçek siler)
 remove() {
   echo "vibe-setup remove — $(pwd)  $([ "$APPLY" = 1 ] && echo '(--apply)' || echo '(dry-run)')"
@@ -659,8 +669,9 @@ case "$CMD" in
   init)    init ;;
   init-cursor) init_cursor ;;
   init-gemini) init_gemini ;;
+  init-aider) init_aider ;;
   upgrade) upgrade ;;
   remove)  remove ;;
   profile) printf 'STACK=%s\nMODULE_DIR=%s\nFMT=%s\nLINT=%s\nTEST=%s\nBUILD=%s\nSRC_RE=%s\nTEST_FIND=%s\nFMT_FILE_OK=%s\nVIBE_VERSION=%s\n' "$STACK" "$MODULE_DIR" "$FMT" "$LINT" "$TEST" "$BUILD" "$SRC_RE" "$TEST_FIND" "$FMT_FILE_OK" "$VIBE_VERSION" ;;
-  *) echo "kullanım: scaffold.sh {audit|init|init-cursor|init-gemini|upgrade|remove|profile} [DIR] [--apply]" >&2; exit 2 ;;
+  *) echo "kullanım: scaffold.sh {audit|init|init-cursor|init-gemini|init-aider|upgrade|remove|profile} [DIR] [--apply]" >&2; exit 2 ;;
 esac
