@@ -7,6 +7,8 @@ Repoyu AI/agent geliştirmeye hazırlayan Claude Code plugin'i. Audit + scaffold
 - Audit (dogfood): `bash skills/vibe-setup/scaffold.sh audit .`
 - Upgrade (dogfood): `bash skills/vibe-setup/scaffold.sh upgrade .` — sürümlü drift; UPDATE/ADD/CONFLICT raporu
 - Profil: `bash skills/vibe-setup/scaffold.sh profile .`
+- Versiyon senkron: `bash scripts/version-sync.sh` — `.claude-plugin/plugin.json`'daki `"version"`'ı
+  `marketplace.json` + `.cursor-plugin/plugin.json`'a yayar (release'te elle çalıştır).
 - Lint (ops): `shellcheck skills/vibe-setup/scaffold.sh` — kurulu değilse atla
 - Format (ops): `shfmt -d skills/vibe-setup/scaffold.sh` — kurulu değilse atla
 
@@ -64,6 +66,11 @@ Detay: [docs/](docs/).
   Subagent dispatch eden bir akış varsa (bu repoda: subagent-driven-development), her dispatch
   prompt'una context-mode kullanım talimatı **açıkça** eklenmeli — subagent taze context alır, parent
   session'ın context-mode kurallarını miras almaz.
+- **Paket versiyonu ≠ `VIBE_VERSION`.** `.claude-plugin/plugin.json` / `marketplace.json` /
+  `.cursor-plugin/plugin.json`'daki `"version"` bu PLUGIN'in kendi sürümü — `scripts/version-sync.sh`
+  ile senkron tutulur, `plugin.json` tek kaynak. `scaffold.sh`'taki `VIBE_VERSION` TAMAMEN AYRI bir
+  kavram: scaffold.sh'ın hedef repolara ÜRETTİĞİ dosya şemasının sürümü (upgrade'in drift tespiti
+  için). Biri artınca diğeri otomatik artmaz — ikisini karıştırma.
 
 ## Git workflow
 - Branch: `chore/...`, `feat/...`, `fix/...`. Commit: `ABC-1234 emir kipi özet` (3 harf + '-' + ≤4 hane).
