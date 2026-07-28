@@ -50,4 +50,5 @@ bash scripts/vibe-update.sh
 ```
 Bu, **branch-HEAD'e değil git tag'e** göre çalışır — bu repo'nun `main`'i sürekli ara-commit
 aldığından (spec/plan/task commit'leri), sadece maintainer'ın açıkça taglediği noktalara güncellenir.
-Yerel kopya elle değiştirilmişse (sapmışsa) asla otomatik merge etmez — hata verir, elle çözmeni ister.
+Yerel kopyanın commit geçmişi sapmışsa (elle commit atılmışsa) asla otomatik merge etmez — hata verir,
+elle çözmeni ister.

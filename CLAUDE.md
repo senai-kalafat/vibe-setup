@@ -12,7 +12,7 @@ Repoyu AI/agent geliştirmeye hazırlayan Claude Code plugin'i. Audit + scaffold
 - Release çıkar: `bash scripts/release.sh <major|minor|patch>` — sürümü hesaplar + yayar (commit/tag
   atmaz); tam süreç: `RELEASE.md`.
 - Self-update (tüketici tarafı): `bash scripts/vibe-update.sh` — kurulu kopyayı en son git tag'e
-  günceller (branch-HEAD değil; sapma varsa asla otomatik merge etmez).
+  günceller (branch-HEAD değil; commit geçmişi sapmışsa asla otomatik merge etmez).
 - Lint (ops): `shellcheck skills/vibe-setup/scaffold.sh` — kurulu değilse atla
 - Format (ops): `shfmt -d skills/vibe-setup/scaffold.sh` — kurulu değilse atla
 

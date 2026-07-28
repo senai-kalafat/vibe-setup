@@ -5,10 +5,11 @@
 # repo kopyasini (git tag). Branch-HEAD DEGIL tag kullanir: main surekli ara-commit alir
 # (spec/plan/task commit'leri), tag ise maintainer'in acikca "bu nokta saglam" dedigi an.
 set -euo pipefail
-DIR="${1:-.}"
+SELF_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+DIR="${1:-$SELF_ROOT}"
 cd "$DIR"
 
-if [ ! -d .git ]; then
+if ! git rev-parse --git-dir >/dev/null 2>&1; then
   echo "Bu vibe-setup kopyasi bir git repo degil — self-update yapilamaz." >&2
   exit 1
 fi

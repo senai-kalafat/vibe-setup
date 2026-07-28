@@ -8,7 +8,12 @@ BUMP="${1:-}"
 DIR="${2:-.}"
 
 if [ -z "$BUMP" ]; then
-  read -rp "Bump tipi (major/minor/patch): " BUMP
+  if [ -t 0 ]; then
+    read -rp "Bump tipi (major/minor/patch): " BUMP
+  else
+    echo "Bump tipi belirtilmedi ve stdin terminal degil (agent/CI cagrisi?) — argüman verin: release.sh <major|minor|patch>" >&2
+    exit 1
+  fi
 fi
 case "$BUMP" in
   major|minor|patch) ;;
