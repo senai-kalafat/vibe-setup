@@ -5,14 +5,14 @@
   },
   "metadata": {
     "description": "vibe-setup — Claude Code plugins",
-    "version": "0.2.0"
+    "version": "0.3.0"
   },
   "plugins": [
     {
       "name": "vibe-setup",
       "source": "./",
       "description": "Audit any repository for AI/agent (vibe coding) readiness, scaffold the missing pieces, upgrade an already-set-up repo to a newer version, and remove what it created — stack- and language-agnostic.",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "author": {
         "name": "Senai Kalafat"
       },
