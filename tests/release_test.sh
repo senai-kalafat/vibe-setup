@@ -91,5 +91,12 @@ else
   echo "  skip: git yok — commit/tag-atmama testi atlandi"
 fi
 
+# 7. BUMP verilmez + stdin terminal degilse (agent/CI) sessizce patlamak yerine net hata basmali
+d="$(fresh notty-case 1.0.0)"
+out="$(bash "$RELEASE" "" "$d" </dev/null 2>&1)"; code=$?
+[ "$code" -ne 0 ] && ok "non-tty + BUMP yok: nonzero exit" || bad "non-tty + BUMP yok: exit 0 (hata vermeliydi)"
+[ -n "$out" ] && ok "non-tty + BUMP yok: hata mesaji basildi (sessiz olum degil)" || bad "non-tty + BUMP yok: cikti bos (sessizce oldu)"
+grep -q '"version": "1.0.0"' "$d/.claude-plugin/plugin.json" && ok "non-tty + BUMP yok: plugin.json degismedi" || bad "non-tty + BUMP yok: plugin.json bozuldu"
+
 echo "release_test: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]

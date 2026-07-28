@@ -77,5 +77,66 @@ printf '%s' "$out" | grep -qi 'daha yeni' && ok "tag'den ileri: bilgilendirici m
 after_ahead="$(git -C "$ahead_case" rev-parse HEAD)"
 [ "$before_ahead" = "$after_ahead" ] && ok "tag'den ileri kopyada HEAD degismedi (no-op)" || bad "tag'den ileri kopyada HEAD degisti"
 
+# 8. self-anchor: DIR verilmezse script'in KENDI kurulu kopyasina (BASH_SOURCE ile repo koku) gider,
+#    cagiranin cwd'sindeki BASKA bir repoya DEGIL. "install" scripts/vibe-update.sh'in bir kopyasini
+#    barindiran ayri bir repo; "victim" cagiranin cwd'sinde duran, ILGISIZ ama sömürülebilir gorunen
+#    bir repo (origin + kendinden ileri bir tag). Eski (fix-oncesi) script cwd'ye bakardi ve victim'i
+#    fetch+ff-merge ederdi — bu, gercek review'de repro edilen veri-kaybi senaryosu.
+install_origin="$tmp/install-origin"; mkdir -p "$install_origin"
+git -C "$install_origin" init -q
+echo "install-base" > "$install_origin/i.txt"
+git_c -C "$install_origin" add -A && git_c -C "$install_origin" commit -q -m "install baseline"
+install_dir="$tmp/install"; git clone -q "$install_origin" "$install_dir" 2>/dev/null
+mkdir -p "$install_dir/scripts"
+cp "$UPDATE_SCRIPT" "$install_dir/scripts/vibe-update.sh"
+echo "install-yeni" > "$install_origin/i.txt"
+git_c -C "$install_origin" add -A && git_c -C "$install_origin" commit -q -m "install yeni surum"
+git_c -C "$install_origin" tag v2.0.0
+
+victim_origin="$tmp/victim-origin"; mkdir -p "$victim_origin"
+git -C "$victim_origin" init -q
+echo "victim-base" > "$victim_origin/v.txt"
+git_c -C "$victim_origin" add -A && git_c -C "$victim_origin" commit -q -m "victim baseline"
+victim="$tmp/victim"; git clone -q "$victim_origin" "$victim" 2>/dev/null
+echo "victim-yeni-SOMURULDU" > "$victim_origin/v.txt"
+git_c -C "$victim_origin" add -A && git_c -C "$victim_origin" commit -q -m "victim yeni surum"
+git_c -C "$victim_origin" tag v9.9.9
+
+victim_before="$(git -C "$victim" rev-parse HEAD)"
+out="$(cd "$victim" && bash "$install_dir/scripts/vibe-update.sh" 2>&1)"; code=$?
+victim_after="$(git -C "$victim" rev-parse HEAD)"
+[ "$victim_before" = "$victim_after" ] && ok "self-anchor: cagiranin cwd'sindeki victim repo dokunulmadi" || bad "self-anchor: victim repo GUNCELLENDI — GUVENLIK IHLALI"
+grep -q "SOMURULDU" "$victim/v.txt" && bad "self-anchor: victim dosyasi somuruldu — GUVENLIK IHLALI" || ok "self-anchor: victim dosyasi degismedi"
+[ "$(git -C "$install_dir" rev-parse HEAD)" = "$(git -C "$install_origin" rev-parse HEAD)" ] && ok "self-anchor: kendi kurulu kopyasi (install_dir) guncellendi" || bad "self-anchor: kendi kurulu kopyasi guncellenmedi (kod $code, cikti: $out)"
+
+# 9. worktree kurulumu: .git bir DOSYAdir (dizin degil) — bu asla yanlislikla reddedilmemeli
+worktree_origin="$tmp/wt-origin"; mkdir -p "$worktree_origin"
+git -C "$worktree_origin" init -q
+echo "wt-base" > "$worktree_origin/w.txt"
+git_c -C "$worktree_origin" add -A && git_c -C "$worktree_origin" commit -q -m "wt baseline"
+git_c -C "$worktree_origin" tag v3.0.0
+wt="$tmp/wt-worktree"
+git -C "$worktree_origin" worktree add -q "$wt" -b wt-branch >/dev/null 2>&1
+[ -f "$wt/.git" ] && ok "worktree kurulumu: .git bir dosya (on-kosul dogrulandi)" || bad "worktree on-kosulu kurulamadi (.git dosya degil)"
+out="$(bash "$UPDATE_SCRIPT" "$wt" 2>&1)"; code=$?
+printf '%s' "$out" | grep -q "git repo koku degil" && bad "worktree: yanlislikla reddedildi (.git dosyasi false-negative)" || ok "worktree: repo-degil hatasi basilmadi (kabul edildi)"
+
+# 10. git repo icine GOMULU, KENDISI git-olmayan bir kopya — REDDEDILMELI (repo-koku degil ic-ice dizin)
+outer_origin="$tmp/outer-origin"; mkdir -p "$outer_origin"
+git -C "$outer_origin" init -q
+echo "outer-base" > "$outer_origin/o.txt"
+git_c -C "$outer_origin" add -A && git_c -C "$outer_origin" commit -q -m "outer baseline"
+git_c -C "$outer_origin" tag v4.0.0
+outer="$tmp/outer"; git clone -q "$outer_origin" "$outer" 2>/dev/null
+echo "outer-yeni-SOMURULDU" > "$outer_origin/o.txt"
+git_c -C "$outer_origin" add -A && git_c -C "$outer_origin" commit -q -m "outer yeni surum"
+git_c -C "$outer_origin" tag v5.0.0
+nested="$outer/plugins/vibe-setup"; mkdir -p "$nested"
+outer_before="$(git -C "$outer" rev-parse HEAD)"
+out="$(bash "$UPDATE_SCRIPT" "$nested" 2>&1)"; code=$?
+outer_after="$(git -C "$outer" rev-parse HEAD)"
+[ "$code" -ne 0 ] && ok "ic-ice git-olmayan kopya: nonzero exit" || bad "ic-ice git-olmayan kopya: exit 0 (reddetmeliydi)"
+[ "$outer_before" = "$outer_after" ] && ok "ic-ice git-olmayan kopya: DIS repo dokunulmadi" || bad "ic-ice git-olmayan kopya: DIS repo GUNCELLENDI — GUVENLIK IHLALI"
+
 echo "vibe_update_test: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]

@@ -9,8 +9,9 @@ SELF_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DIR="${1:-$SELF_ROOT}"
 cd "$DIR"
 
-if ! git rev-parse --git-dir >/dev/null 2>&1; then
-  echo "Bu vibe-setup kopyasi bir git repo degil — self-update yapilamaz." >&2
+TOP="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+if [ -z "$TOP" ] || [ "$TOP" != "$(pwd -P)" ]; then
+  echo "Bu vibe-setup kopyasi bir git repo koku degil — self-update yapilamaz." >&2
   exit 1
 fi
 
