@@ -137,7 +137,9 @@ audit() {
   echo
   echo "BAĞLAM"
   has_file CLAUDE.md   && row "$OK" "CLAUDE.md" || row "$NO" "CLAUDE.md" "LLM: oluştur (komut+mimari+gotchas)"
-  has_file AGENTS.md   && row "$OK" "AGENTS.md" || row "$NO" "AGENTS.md" "init düşürür"
+  if has_file AGENTS.md; then row "$OK" "AGENTS.md"
+  elif has_file AGENT.md; then row "$NO" "AGENTS.md" "legacy AGENT.md bulundu — init migrate eder (mv+symlink)"
+  else row "$NO" "AGENTS.md" "init düşürür"; fi
   has_file llms.txt    && row "$OK" "llms.txt (ops)" || row "$NA" "llms.txt (ops)" "opsiyonel: dış LLM tüketicisi varsa"
   has_file README.md   && row "$OK" "README.md" || row "$NO" "README.md" "yok"
   echo "BİLGİ TABANI"
@@ -431,10 +433,29 @@ write_managed() {  # $1 = managed path
   echo "  NEW   $1"
 }
 
+# Resmi AGENTS.md migrasyon tavsiyesi: eski tekil AGENT.md → AGENTS.md + geriye-uyumlu symlink.
+# Bu vibe-setup'ın ÜRETTİĞİ içerik DEĞİL (kullanıcının taşınmış içeriği) → NEW_PATHS'e EKLENMEZ,
+# böylece created_for_manifest false kalır (remove asla silmeye kalkışmaz). WRITTEN_PATHS'e eklenir
+# ki sha güncel kalsın (manifest "bu içerik bu" der, ama "bunu ben ürettim" demez).
+migrate_legacy_agent_md() {
+  if [ ! -e AGENTS.md ] && [ -e AGENT.md ]; then
+    mv AGENT.md AGENTS.md
+    ln -s AGENTS.md AGENT.md
+    WRITTEN_PATHS="$WRITTEN_PATHS AGENTS.md"
+    echo "  MIGRATE AGENTS.md (eski AGENT.md taşındı + geriye-uyumlu symlink bırakıldı)"
+    return 0
+  fi
+  return 1
+}
+
 init() {
   echo "vibe-setup init — $(pwd)  (stack: $STACK, engine v$VIBE_VERSION)"
   STAMP_VERSION=1
-  local p; for p in $(managed_paths); do write_managed "$p"; done
+  local p
+  for p in $(managed_paths); do
+    if [ "$p" = "AGENTS.md" ] && migrate_legacy_agent_md; then continue; fi
+    write_managed "$p"
+  done
 
   if [ -f .gitignore ] && ! grep -q 'settings.local.json' .gitignore; then
     printf '\n.claude/settings.local.json\n' >> .gitignore; echo "  EDIT  .gitignore (+settings.local.json)"

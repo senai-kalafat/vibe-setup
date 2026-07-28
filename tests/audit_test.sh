@@ -46,5 +46,12 @@ else
   printf '%s' "$out5" | grep -qE '❌ +context-mode' && ok "context-mode eksik → ❌ basıyor" || bad "context-mode eksik ama ❌ basmadı"
 fi
 
+# 6. legacy tekil AGENT.md: ayrı bir tmp repo'da (mevcut $work'e karışmasın) — audit init'ten önce
+#    bile bunu tespit etmeli (bkz tests/agent_migration_test.sh — burada sadece audit satırı doğrulanır)
+legacy="$tmp/legacy-repo"; mkdir -p "$legacy"
+printf 'eski notlar\n' > "$legacy/AGENT.md"
+out6="$(bash "$SCAFFOLD" audit "$legacy" 2>/dev/null)"
+printf '%s' "$out6" | grep -qi 'legacy AGENT.md' && ok "legacy AGENT.md → audit tespit satırı basıyor" || bad "legacy AGENT.md tespit satırı yok"
+
 echo "audit_test: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]
