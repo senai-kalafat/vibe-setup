@@ -29,7 +29,7 @@
 ## TOKEN OPTİMİZASYONU
 - [ ] CLAUDE.md işaretçi tarzı (derin docs tembel yüklenir)
 - [ ] Büyük/üretilmiş varlıklar "okuma" diye işaretli + `permissions.deny` ile sert engel
-- [ ] Projeye-özgü MCP (varsa) repoya sabit (DB/iç-doküman/Jira); evrensel kişisel araç (context-mode vb.) user-global, repoya gömülmez
+- [ ] Projeye-özgü MCP (varsa) repoya sabit (DB/iç-doküman/Jira); context-mode zorunlu bağımlılık kuruldu (Claude/Cursor repo-tracked, Antigravity global)
 - [ ] İzin allowlist → daha az onay (mutasyon yapanlar hariç)
 
 ## DOĞRULAMA  ← çoğu proje burada çuvallar

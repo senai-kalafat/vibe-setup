@@ -5,7 +5,9 @@ Herhangi bir repoyu **AI/agent destekli geliştirme ("vibe coding")** için dene
 
 Ne kurar: `CLAUDE.md`, `AGENTS.md`, `docs/` + ADR, test harness, herkesi bağlayan git
 pre-commit hook (fmt/lint/doc-sync), `.claude/settings.json` izinleri, commit/PR(MR) şablonları, opsiyonel
-Cursor kuralları, (ops) `llms.txt` ve tekrar kullanılabilir vibe checklist. Önce/sonra uyumluluk skoru gösterir.
+Cursor/Gemini CLI kuralları, (ops) `llms.txt` ve tekrar kullanılabilir vibe checklist. context-mode'u
+(Claude/Cursor/Antigravity) zorunlu bağımlılık olarak kurar. Önce/sonra uyumluluk skoru gösterir. Kaldırmak
+istersen `remove` komutu (dry-run varsayılan) var.
 
 Desteklenen: Go, Node/TS, Python, Java, Kotlin, Swift, Rust, Ruby, .NET, PHP, Elixir + boş repo.
 
@@ -209,7 +211,7 @@ Skill bu maddelere göre denetler ve dolu halini repo köküne `vibe-checklist.m
 ### TOKEN OPTİMİZASYONU
 - **CLAUDE.md işaretçi tarzı** · Derin docs tembel yüklenir.
 - **Büyük/üretilmiş varlıklar engelli** · `permissions.deny` ile bundle/swagger/dist okunmaz → bağlam patlamaz.
-- **Projeye-özgü MCP repoya sabit** · Ekibin ortak, domaine bağlı sunucusu (DB/iç-doküman/Jira). Evrensel kişisel araç (context-mode vb.) user-global kalır, repoya gömülmez.
+- **Projeye-özgü MCP repoya sabit** · Ekibin ortak, domaine bağlı sunucusu (DB/iç-doküman/Jira). context-mode zorunlu bağımlılık — Faz 3 otomatik kurar (Claude/Cursor repo-tracked, Antigravity global).
 - **İzin allowlist** · Sık güvenli komutlar prompt'suz; mutasyon yapanlar hariç.
 
 ### DOĞRULAMA  *(çoğu proje burada çuvallar)*
