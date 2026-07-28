@@ -129,6 +129,20 @@ Cursor'da Claude Code plugin marketplace yok — skill iki parçayla kullanılı
 > AGENTS.md tek-kaynak ayna olduğundan, Claude tarafıyla kurulan bir repoyu Cursor da `init-cursor`
 > olmadan okuyabilir; `init-cursor` sadece Cursor-yerel kural dosyalarını ekler.
 
+Repo ayrıca `.cursor-plugin/plugin.json` + `.cursor-plugin/vibe-setup.mdc` taşır — Cursor'ın ileride
+otomatik keşfedebileceği bir manifest (Claude marketplace girişiyle aynı şekle sahip); bugün için
+pratik kurulum yolu hâlâ yukarıdaki 3 adım.
+
+### Güncelleme (vibe-setup'ın kendi kopyası)
+
+Kurulu kopyanı en son sürüme çekmek için (bu, hedef repolara scaffold eden `scaffold.sh upgrade`'den
+AYRI — o hedef reponun dosyalarını günceller, bu ARACIN KENDİ repo kopyasını günceller):
+```
+bash /yol/vibe-setup/scripts/vibe-update.sh
+```
+Tag-tabanlı (branch-HEAD değil), sapma varsa asla otomatik merge etmez. Tam release süreci ve
+sürüm çıkarma detayları: [RELEASE.md](RELEASE.md).
+
 ## Kullanım
 
 Herhangi bir projede:
@@ -245,13 +259,20 @@ Skill bu maddelere göre denetler ve dolu halini repo köküne `vibe-checklist.m
 
 ## Yapı
 ```
-.claude-plugin/{plugin.json, marketplace.json}
+.claude-plugin/{plugin.json, marketplace.json}   # Claude Code plugin/marketplace manifest
+.cursor-plugin/{plugin.json, vibe-setup.mdc}     # Cursor discovery manifest (bkz Kurulum)
 skills/vibe-setup/
   SKILL.md                  # orchestration
   scaffold.sh               # audit / init / init-cursor / init-gemini / upgrade / remove / profile
   stack-profiles.md         # 11 ekosistem komut tablosu (tek stack-bağımlı katman)
   vibe-checklist-template.md
   legacy-runbook.md         # sadece legacy repolarda okunur
+scripts/
+  version-sync.sh           # plugin.json'daki version'u diger manifestlere yayar
+  release.sh                # surum hesapla + yay (commit/tag atmaz) — bkz RELEASE.md
+  vibe-update.sh            # tag-tabanli self-update (araci kendi kopyasi icin)
+tests/                      # bash tests/run.sh ile calisan bagimsiz test suite
+RELEASE.md                  # release cikarma + self-update sureci
 ```
 
 ## Yeni stack eklemek
