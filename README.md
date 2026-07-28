@@ -5,7 +5,7 @@ Herhangi bir repoyu **AI/agent destekli geliştirme ("vibe coding")** için dene
 
 Ne kurar: `CLAUDE.md`, `AGENTS.md`, `docs/` + ADR, test harness, herkesi bağlayan git
 pre-commit hook (fmt/lint/doc-sync), `.claude/settings.json` izinleri, commit/PR(MR) şablonları, opsiyonel
-Cursor/Gemini CLI kuralları, (ops) `llms.txt` ve tekrar kullanılabilir vibe checklist. context-mode'u
+Cursor/Gemini CLI/Aider kuralları, (ops) `llms.txt` ve tekrar kullanılabilir vibe checklist. context-mode'u
 (Claude/Cursor/Antigravity) zorunlu bağımlılık olarak kurar. Önce/sonra uyumluluk skoru gösterir. Kaldırmak
 istersen `remove` komutu (dry-run varsayılan) var.
 
@@ -17,11 +17,13 @@ Desteklenen: Go, Node/TS, Python, Java, Kotlin, Swift, Rust, Ruby, .NET, PHP, El
 
 - **Deterministik motor** — [scaffold.sh](skills/vibe-setup/scaffold.sh): saf bash, tek opsiyonel
   dep `jq` (yoksa audit yalnız izin satırlarını atlar). Stack tespiti, agnostik iskelet, komut
-  substitüsyonu, sürümlü drift tespiti. Yedi komut:
+  substitüsyonu, sürümlü drift tespiti. Sekiz komut:
   - `audit` — hazırlık tablosu (✅/❌/—) + makine-okur `SCORE=N/M` footer
-  - `init` — eksik agnostik dosyaları düşürür; **var olanı asla ezmez** (SKIP, idempotent)
+  - `init` — eksik agnostik dosyaları düşürür; **var olanı asla ezmez** (SKIP, idempotent); legacy tekil
+    `AGENT.md` varsa `AGENTS.md`'ye migrate eder (mv + geriye-uyumlu symlink)
   - `init-cursor` — Cursor kural dosyaları (`.cursor/rules/project.mdc` + `.cursorrules` → CLAUDE.md)
   - `init-gemini` — Gemini CLI context dosyası (`GEMINI.md` → `@CLAUDE.md` importu)
+  - `init-aider` — Aider config dosyası (`.aider.conf.yml` → `read: AGENTS.md`)
   - `upgrade` — zaten kurulu repoyu yeni sürüme taşır (sha-drift → UPDATE/ADD/CONFLICT; asla ezmez)
   - `remove` — vibe-setup'ın yarattığı, hâlâ değişmemiş dosyaları kaldırır (dry-run varsayılan, `--apply` gerçek siler)
   - `profile` — tespit edilen stack profilini basar (9 alan + `VIBE_VERSION`, makine-okur)
@@ -41,10 +43,13 @@ arar (`MODULE_DIR`); proje artefaktları (CLAUDE.md, docs/, hook) **kökte**, st
 
 ### Skill akışı (6 faz)
 1. **Tespit + audit** → BEFORE skoru saklanır.
-2. **Rapor + onay** → eksikler agnostik / stack-bağımlı diye gruplanır; AGENTS.md zaten Codex/Kimi Code'u
-   kapsar (ekstra dosya gerekmez) — hedef araç sorusu sadece Cursor ve/veya Gemini CLI için ayrı context
-   dosyası (`init-cursor`/`init-gemini`) ve hangi maddeler kurulacak sorulur. **Kullanıcı seçmeden dosya üretilmez**; tehlikeli/dışa-dönük
-   olanlar (plugin enable, harici repo, izin genişletme) ayrıca onay ister.
+2. **Rapor + onay** → eksikler agnostik / stack-bağımlı diye gruplanır; AGENTS.md geniş bir ekosistemi
+   (Codex, Kimi Code, Zed, Warp, VS Code, Devin, Amp, RooCode, Kilo Code, GitHub Copilot coding agent,
+   Windsurf, Augment Code, goose, opencode, Junie, Phoenix, Semgrep, Ona, Factory, Jules) zaten kapsar
+   (ekstra dosya gerekmez) — hedef araç sorusu sadece Cursor ve/veya Gemini CLI ve/veya Aider için ayrı
+   context dosyası (`init-cursor`/`init-gemini`/`init-aider`) ve hangi maddeler kurulacak sorulur.
+   **Kullanıcı seçmeden dosya üretilmez**; tehlikeli/dışa-dönük olanlar (plugin enable, harici repo,
+   izin genişletme) ayrıca onay ister.
 3. **Agnostik iskelet** (`init`) → AGENTS.md, docs/ + ADR template, .gitmessage, PR/MR şablonu
    (GitHub `.github/` ya da GitLab `.gitlab/` otomatik), .githooks/pre-commit + commit-msg, settings.json iskeleti.
 4. **Stack-bağımlı içerik** → LLM repoyu okuyup CLAUDE.md (komut + mimari + gotchas), gerçek test,
@@ -121,10 +126,12 @@ Cursor'da Claude Code plugin marketplace yok — skill iki parçayla kullanılı
    olarak kopyala. Cursor agent orkestrasyon akışını izler (audit → onay → iskelet → içerik → doğrula).
 3. **Deterministik motor (Cursor'sız da):** `scaffold.sh` saf bash, dış dep yok — doğrudan çalıştır:
    ```
-   bash /yol/vibe-setup/skills/vibe-setup/scaffold.sh audit .   # audit | init | init-cursor | init-gemini | upgrade | remove | profile
+   bash /yol/vibe-setup/skills/vibe-setup/scaffold.sh audit .   # audit | init | init-cursor | init-gemini | init-aider | upgrade | remove | profile
    ```
    `init-cursor` hedef repoya `.cursor/rules/project.mdc` + `.cursorrules` düşürür (CLAUDE.md'ye yönlendirir);
-   `init-gemini` aynı şekilde `GEMINI.md` düşürür. `remove` kurulanları geri alır (önce dry-run, sonra `--apply`).
+   `init-gemini` aynı şekilde `GEMINI.md` düşürür; `init-aider` `.aider.conf.yml` düşürür (Aider AGENTS.md'yi
+   native okumaz, `read: AGENTS.md` ile açıkça işaretler). `remove` kurulanları geri alır (önce dry-run,
+   sonra `--apply`).
 
 > AGENTS.md tek-kaynak ayna olduğundan, Claude tarafıyla kurulan bir repoyu Cursor da `init-cursor`
 > olmadan okuyabilir; `init-cursor` sadece Cursor-yerel kural dosyalarını ekler.

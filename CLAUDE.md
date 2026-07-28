@@ -27,7 +27,7 @@ Repoyu AI/agent geliştirmeye hazırlayan Claude Code plugin'i. Audit + scaffold
 
 Dosyalar:
 - `skills/vibe-setup/SKILL.md` — orkestrasyon akışı (init + upgrade + remove)
-- `skills/vibe-setup/scaffold.sh` — motor (`audit|init|init-cursor|init-gemini|upgrade|remove|profile`)
+- `skills/vibe-setup/scaffold.sh` — motor (`audit|init|init-cursor|init-gemini|init-aider|upgrade|remove|profile`)
 - `skills/vibe-setup/stack-profiles.md` — stack komut tablosu (insan-okur ayna)
 - `skills/vibe-setup/{vibe-checklist-template,legacy-runbook}.md`
 - `.claude-plugin/{plugin,marketplace}.json` — plugin manifest
@@ -60,11 +60,20 @@ Detay: [docs/](docs/).
   java/rust/dotnet → repo-geneli, advisory; asıl enforcement CI.
 - **Hook tool yoksa atlar** (`command -v`). Bu repoda shellcheck/shfmt kurulu olmayabilir → fmt/lint
   sessizce atlanır, test yine çalışır.
-- **Araç desteği:** Codex ve Kimi Code `AGENTS.md`'yi native okur (`init` zaten düşürür, ekstra dosya
-  yok). Cursor (`init-cursor`) ve Gemini CLI (`init-gemini` → `GEMINI.md`, `@CLAUDE.md` importu) ayrı
-  context dosyası ister — bunlar `managed_paths`'e GİRMEZ (Cursor ile aynı sınıf: bir kez düşer,
-  drift/upgrade takibi yok, audit satırı yok). AGENTS.md'nin metni v4'te değişti (Gemini'nin AGENTS.md
-  okuduğu yanlış iddiası düzeltildi) → bkz `VIBE_VERSION`.
+- **Araç desteği:** AGENTS.md'yi native okuyan geniş bir ekosistem var — Codex, Kimi Code, Zed, Warp,
+  VS Code, Devin, Amp, RooCode, Kilo Code, GitHub Copilot coding agent, Windsurf, Augment Code, goose,
+  opencode, Junie, Phoenix, Semgrep, Ona, Factory, Jules — hiçbiri ekstra dosya istemez (`init` zaten
+  yeterli). Cursor (`init-cursor`), Gemini CLI (`init-gemini` → `GEMINI.md`, `@CLAUDE.md` importu) ve
+  Aider (`init-aider` → `.aider.conf.yml`, `read: AGENTS.md`) ayrı context dosyası ister — bunlar
+  `managed_paths`'e GİRMEZ (aynı sınıf: bir kez düşer, drift/upgrade takibi yok, audit satırı yok; var
+  olan `.cursorrules`/`GEMINI.md`/`.aider.conf.yml` varsa asla ezilmez). AGENTS.md'nin metni v4'te
+  değişti (Gemini'nin AGENTS.md okuduğu yanlış iddiası düzeltildi) → bkz `VIBE_VERSION`.
+- **Legacy tekil `AGENT.md`:** `init` çalışırken `AGENTS.md` yok + `AGENT.md` (tekil) varsa, template
+  render ETMEZ — `mv AGENT.md AGENTS.md && ln -s AGENTS.md AGENT.md` yapar (resmi AGENTS.md migrasyon
+  tavsiyesi). Bu vibe-setup'ın ÜRETTİĞİ içerik DEĞİL — manifestte `created:false` işaretlenir (aynı
+  "önceden vardı" sınıfı), yani `remove` bunu ASLA silmeye kalkışmaz (`migrate_legacy_agent_md`
+  `NEW_PATHS`'e eklemez, sadece `WRITTEN_PATHS`'e — sha tazelenir ama provenance "ben ürettim" demez).
+  `audit` da bunu init'ten önce sinyal verir.
 - **context-mode zorunlu bağımlılık** (v9+): SKILL.md Faz 3 her çalıştırmada sorulmadan kurar
   (`npm install -g context-mode` + Claude/Cursor repo-tracked JSON-merge + Antigravity global config).
   Subagent dispatch eden bir akış varsa (bu repoda: subagent-driven-development), her dispatch

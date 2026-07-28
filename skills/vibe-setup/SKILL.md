@@ -52,9 +52,12 @@ Bundled dosyalar bu skill dizinindedir: `scaffold.sh`, `stack-profiles.md`, `vib
 ### 2. Rapor + onay (+ hedef araçlar)
 - Audit tablosunu kullanıcıya göster. Eksikleri iki grupta özetle:
   **agnostik** (script düşürür) ve **stack-bağımlı** (sen dolduracaksın).
-- **Hedef araç sorusu:** Claude varsayılan. AGENTS.md zaten Codex ve Kimi Code'u kapsar — bu ikisi
-  ekstra dosya istemez, hiçbir şey yapma. Kullanıcıya sor: **"Cursor ve/veya Gemini CLI için ayrı
-  context dosyası ister misin?"** Evet ise Faz 3'te ilgili `init-cursor` / `init-gemini`'yi çalıştır.
+- **Hedef araç sorusu:** Claude varsayılan. AGENTS.md geniş bir ekosistemi zaten kapsar (Codex, Kimi
+  Code, Zed, Warp, VS Code, Devin, Amp, RooCode, Kilo Code, GitHub Copilot coding agent, Windsurf,
+  Augment Code, goose, opencode, Junie, Phoenix, Semgrep, Ona, Factory, Jules) — bunların hiçbiri ekstra
+  dosya istemez, hiçbir şey yapma. Kullanıcıya sor: **"Cursor ve/veya Gemini CLI ve/veya Aider için ayrı
+  context dosyası ister misin?"** Evet ise Faz 3'te ilgili `init-cursor` / `init-gemini` / `init-aider`'i
+  çalıştır.
 - **Ticket-key sorusu (zorunlu SOR, varsayma):** commit mesajında ticket-key zorlansın mı?
   Varsayılan **zorlamasız** (hook hiçbir şeyi bloklamaz). Kullanıcı isterse formatı da sor —
   standart `ABC-1234` mi, özel regex mi? Cevaba göre Faz 3 sonrasında:
@@ -73,6 +76,8 @@ Bundled dosyalar bu skill dizinindedir: `scaffold.sh`, `stack-profiles.md`, `vib
   + `.cursorrules` (ikisi de CLAUDE.md'ye yönlendirir).
 - Kullanıcı **Gemini** dediyse: `bash "$SKILL_DIR/scaffold.sh" init-gemini .` → `GEMINI.md`
   (`@CLAUDE.md` importu — Gemini CLI içeriği doğrudan çeker, pointer değil).
+- Kullanıcı **Aider** dediyse: `bash "$SKILL_DIR/scaffold.sh" init-aider .` → `.aider.conf.yml`
+  (`read: AGENTS.md` — Aider AGENTS.md'yi native okumaz, açıkça işaretlenmesi gerekir).
 - **context-mode kurulumu (HER ZAMAN, sorulmadan — zorunlu bağımlılık, artık opsiyonel değil):**
   1. `npm install -g context-mode` çalıştır, çıktıyı kullanıcıya göster.
   2. `.claude/settings.json`'ı **oku** (bu noktada `init .` zaten oluşturmuş olmalı), mevcut içeriğe
