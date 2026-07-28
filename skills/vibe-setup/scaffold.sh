@@ -504,7 +504,7 @@ upgrade() {
   echo "applied=v$applied → engine=v$VIBE_VERSION"
 
   local add=() upd=() conf=() tmp; tmp="$(mktemp)"
-  local p cls wantsha cursha mansha
+  local p cls wantsha cursha mansha mancreated
   for p in $(managed_paths); do
     if [ ! -e "$p" ]; then add+=("$p"); continue; fi
     cls="$(artifact_class "$p")"
@@ -513,7 +513,10 @@ upgrade() {
     wantsha="$(sha_of_path "$tmp")"; cursha="$(sha_of_path "$p")"
     [ "$wantsha" = "$cursha" ] && continue                            # zaten güncel template
     mansha="$(manifest_sha "$p" 2>/dev/null || true)"
-    if [ "$legacy" -eq 1 ] || [ -z "$mansha" ]; then conf+=("$p")     # provenance yok → güvenli CONFLICT (ezme)
+    mancreated="$(manifest_created "$p" 2>/dev/null || true)"
+    # provenance yok, VEYA vibe-setup'ın ürettiği içerik değil (created:false — pre-existing ya da
+    # migrate_legacy_agent_md gibi taşınmış içerik) → güvenli CONFLICT (sha eşleşse bile EZME):
+    if [ "$legacy" -eq 1 ] || [ -z "$mansha" ] || [ "$mancreated" = "false" ]; then conf+=("$p")
     elif [ "$cursha" = "$mansha" ]; then                              # dokunulmamış → güvenli UPDATE
       cp "$tmp" "$p"; case "$p" in .githooks/*) chmod +x "$p" ;; esac; upd+=("$p")
     else conf+=("$p"); fi                                             # elle düzenlenmiş → CONFLICT (ezme)

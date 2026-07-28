@@ -112,5 +112,16 @@ grep -q '"vibeVersion": 2' "$d/.vibe-setup.json" && ok "K: init-cursor eski vibe
 out3="$(bash "$SCAFFOLD" audit "$d" 2>/dev/null)"
 printf '%s' "$out3" | grep -q 'UPDATE_AVAILABLE=v2->v4' && ok "K: audit hala UPDATE_AVAILABLE basiyor (sinyal kaybolmadi)" || bad "K: UPDATE_AVAILABLE sinyali kayboldu"
 
+# L. REGRESYON: migrate_legacy_agent_md ile gelen AGENTS.md (created:false) sha eslesse bile
+#    upgrade tarafindan sablonla EZILMEMELI — provenance "vibe-setup uretti" demiyor, sha-eslesmesi
+#    yanlislikla "dokunulmamis" sanip UPDATE'e dusurmemeli (bkz scaffold.sh upgrade() mancreated kontrolu).
+d="$tmp/L"; mkdir -p "$d"
+printf '# Benim eski agent notlarim\nBu icerik onemli, kaybolmamali.\n' > "$d/AGENT.md"
+bash "$SCAFFOLD" init "$d" >/dev/null 2>&1
+grep -q '"AGENTS.md": { "v": 4, "sha": "[0-9]*", "created": false' "$d/.vibe-setup.json" && ok "L: migrate sonrasi AGENTS.md created:false" || bad "L: migrate sonrasi created:false degil"
+out="$(bash "$SCAFFOLD" upgrade "$d" 2>/dev/null)"
+[ "$(field "$out" CONFLICT)" = "AGENTS.md" ] && ok "L: migrasyonla gelen AGENTS.md upgrade'de CONFLICT (UPDATE degil)" || bad "L: CONFLICT beklenirken: U='$(field "$out" UPDATE)' C='$(field "$out" CONFLICT)'"
+grep -q 'Benim eski agent notlarim' "$d/AGENTS.md" && ok "L: icerik upgrade'de de korundu (sablonla EZILMEDI)" || bad "L: upgrade migrasyon icerigini ezdi — VERI KAYBI"
+
 echo "upgrade_test: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]
