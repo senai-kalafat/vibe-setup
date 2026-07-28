@@ -8,9 +8,10 @@ set -euo pipefail
 SELF_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DIR="${1:-$SELF_ROOT}"
 cd "$DIR"
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_COMMON_DIR GIT_NAMESPACE
 
 TOP="$(git rev-parse --show-toplevel 2>/dev/null || true)"
-if [ -z "$TOP" ] || [ "$TOP" != "$(pwd -P)" ]; then
+if [ -z "$TOP" ] || [ ! "$TOP" -ef "$(pwd -P)" ]; then
   echo "Bu vibe-setup kopyasi bir git repo koku degil — self-update yapilamaz." >&2
   exit 1
 fi

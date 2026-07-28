@@ -138,5 +138,45 @@ outer_after="$(git -C "$outer" rev-parse HEAD)"
 [ "$code" -ne 0 ] && ok "ic-ice git-olmayan kopya: nonzero exit" || bad "ic-ice git-olmayan kopya: exit 0 (reddetmeliydi)"
 [ "$outer_before" = "$outer_after" ] && ok "ic-ice git-olmayan kopya: DIS repo dokunulmadi" || bad "ic-ice git-olmayan kopya: DIS repo GUNCELLENDI — GUVENLIK IHLALI"
 
+# 11. cagiranin ortaminda GIT_DIR set edilmisse (git hook/rebase --exec/submodule foreach miras
+#     birakabilir), plain git-olmayan bir dizin YANLISLIKLA kabul edilip BASKA repo fetch+ff-merge
+#     EDILMEMELI. GIT_WORK_TREE olmadan GIT_DIR tek basina show-toplevel'i cwd'ye "yapistirir" —
+#     script bunu ACIKCA unset etmeli.
+gitdir_victim_origin="$tmp/gitdir-victim-origin"; mkdir -p "$gitdir_victim_origin"
+git -C "$gitdir_victim_origin" init -q
+echo "gitdir-victim-base" > "$gitdir_victim_origin/g.txt"
+git_c -C "$gitdir_victim_origin" add -A && git_c -C "$gitdir_victim_origin" commit -q -m "gitdir victim baseline"
+git_c -C "$gitdir_victim_origin" tag v6.0.0
+gitdir_victim="$tmp/gitdir-victim"; git clone -q "$gitdir_victim_origin" "$gitdir_victim" 2>/dev/null
+echo "gitdir-victim-yeni-SOMURULDU" > "$gitdir_victim_origin/g.txt"
+git_c -C "$gitdir_victim_origin" add -A && git_c -C "$gitdir_victim_origin" commit -q -m "gitdir victim yeni surum"
+git_c -C "$gitdir_victim_origin" tag v7.0.0
+plainnongit="$tmp/plain-non-git"; mkdir -p "$plainnongit"
+echo "kullanicinin degerli dosyasi" > "$plainnongit/important.txt"
+gitdir_victim_before="$(git -C "$gitdir_victim" rev-parse HEAD)"
+out="$(GIT_DIR="$gitdir_victim/.git" bash "$UPDATE_SCRIPT" "$plainnongit" 2>&1)"; code=$?
+gitdir_victim_after="$(git -C "$gitdir_victim" rev-parse HEAD)"
+[ "$code" -ne 0 ] && ok "GIT_DIR ortam degiskeni ile: nonzero exit" || bad "GIT_DIR ortam degiskeni ile: exit 0 (reddetmeliydi)"
+[ "$gitdir_victim_before" = "$gitdir_victim_after" ] && ok "GIT_DIR ortam degiskeni ile: victim repo dokunulmadi" || bad "GIT_DIR ortam degiskeni ile: victim repo GUNCELLENDI — GUVENLIK IHLALI"
+grep -q "kullanicinin degerli dosyasi" "$plainnongit/important.txt" && ok "GIT_DIR ortam degiskeni ile: plain dizindeki dosya bozulmadi" || bad "GIT_DIR ortam degiskeni ile: plain dizin BOZULDU"
+
+# 12. case-insensitive dosya sistemi (macOS/APFS varsayilan): DIR farkli buyuk/kucuk harfle
+#     verilse bile ayni fiziksel dizine cozulmeli, YANLISLIKLA reddedilmemeli. Case-sensitive
+#     dosya sisteminde (cogu Linux) bu senaryo kurulamaz — o zaman atlanir.
+casetest="$tmp/CaseProbe"; mkdir -p "$casetest"
+if [ -d "$tmp/caseprobe" ]; then
+  case_origin="$tmp/CaseInstall-origin"; mkdir -p "$case_origin"
+  git -C "$case_origin" init -q
+  echo "case-base" > "$case_origin/c.txt"
+  git_c -C "$case_origin" add -A && git_c -C "$case_origin" commit -q -m "case baseline"
+  git_c -C "$case_origin" tag v8.0.0
+  case_install="$tmp/CaseInstall"; git clone -q "$case_origin" "$case_install" 2>/dev/null
+  case_lower="$(dirname "$case_install")/$(basename "$case_install" | tr 'A-Z' 'a-z')"
+  out="$(bash "$UPDATE_SCRIPT" "$case_lower" 2>&1)"; code=$?
+  [ "$code" -eq 0 ] && ok "case-variant yol: kabul edildi (dosya sistemi case-insensitive)" || bad "case-variant yol: reddedildi (kod $code): $out"
+else
+  echo "  skip: dosya sistemi case-sensitive — case-variant testi atlandi"
+fi
+
 echo "vibe_update_test: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]
