@@ -59,6 +59,11 @@ Detay: [docs/](docs/).
   context dosyası ister — bunlar `managed_paths`'e GİRMEZ (Cursor ile aynı sınıf: bir kez düşer,
   drift/upgrade takibi yok, audit satırı yok). AGENTS.md'nin metni v4'te değişti (Gemini'nin AGENTS.md
   okuduğu yanlış iddiası düzeltildi) → bkz `VIBE_VERSION`.
+- **context-mode zorunlu bağımlılık** (v9+): SKILL.md Faz 3 her çalıştırmada sorulmadan kurar
+  (`npm install -g context-mode` + Claude/Cursor repo-tracked JSON-merge + Antigravity global config).
+  Subagent dispatch eden bir akış varsa (bu repoda: subagent-driven-development), her dispatch
+  prompt'una context-mode kullanım talimatı **açıkça** eklenmeli — subagent taze context alır, parent
+  session'ın context-mode kurallarını miras almaz.
 
 ## Git workflow
 - Branch: `chore/...`, `feat/...`, `fix/...`. Commit: `ABC-1234 emir kipi özet` (3 harf + '-' + ≤4 hane).

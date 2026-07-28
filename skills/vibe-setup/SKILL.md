@@ -110,6 +110,10 @@ Bundled dosyalar bu skill dizinindedir: `scaffold.sh`, `stack-profiles.md`, `vib
 Onaylanan her madde için:
 - **CLAUDE.md**: modül kökü kuralı, komutlar (profilden), mimari özet, **Gotchas** (koddan çıkarılması zor
   tuzaklar — gerçek koddan çıkar), git workflow. İşaretçi tarzı: docs'a yönlendir, içerik dökme.
+  Gotchas'a şunu da ekle: **subagent/alt-görev başlatan bir akış varsa, o subagent'lara da context-mode
+  kullanım talimatı açıkça verilmeli** — subagent taze context alır, parent'ın context-mode kuralını
+  miras almaz (Faz 3 context-mode'u zaten zorunlu kurdu; bu, o kurulumun subagent'lara da işlemesini
+  sağlayan tribal bilgi).
 - **docs**: iskeletteki `<TODO>`'ları gerçek içerikle değiştir (kod haritası, conventions).
 - **(ops) llms.txt**: init bunu **düşürmez** (iç repoda tüketicisi yok). Sadece dış LLM/dokümantasyon
   sitesi tüketecekse `llmstxt.org` formatında elle ekle.
