@@ -9,6 +9,10 @@ Repoyu AI/agent geliştirmeye hazırlayan Claude Code plugin'i. Audit + scaffold
 - Profil: `bash skills/vibe-setup/scaffold.sh profile .`
 - Versiyon senkron: `bash scripts/version-sync.sh` — `.claude-plugin/plugin.json`'daki `"version"`'ı
   `marketplace.json` + `.cursor-plugin/plugin.json`'a yayar (release'te elle çalıştır).
+- Release çıkar: `bash scripts/release.sh <major|minor|patch>` — sürümü hesaplar + yayar (commit/tag
+  atmaz); tam süreç: `RELEASE.md`.
+- Self-update (tüketici tarafı): `bash scripts/vibe-update.sh` — kurulu kopyayı en son git tag'e
+  günceller (branch-HEAD değil; sapma varsa asla otomatik merge etmez).
 - Lint (ops): `shellcheck skills/vibe-setup/scaffold.sh` — kurulu değilse atla
 - Format (ops): `shfmt -d skills/vibe-setup/scaffold.sh` — kurulu değilse atla
 
@@ -70,7 +74,9 @@ Detay: [docs/](docs/).
   `.cursor-plugin/plugin.json`'daki `"version"` bu PLUGIN'in kendi sürümü — `scripts/version-sync.sh`
   ile senkron tutulur, `plugin.json` tek kaynak. `scaffold.sh`'taki `VIBE_VERSION` TAMAMEN AYRI bir
   kavram: scaffold.sh'ın hedef repolara ÜRETTİĞİ dosya şemasının sürümü (upgrade'in drift tespiti
-  için). Biri artınca diğeri otomatik artmaz — ikisini karıştırma.
+  için). Biri artınca diğeri otomatik artmaz — ikisini karıştırma. Release çıkarma + self-update tam
+  süreci: `RELEASE.md`. `scripts/vibe-update.sh` de bu ayrımı miras alır — `scaffold.sh upgrade`
+  (hedef repo, VIBE_VERSION) değil, git TAG bazlı (bu repo'nun kendi kopyası) çalışır.
 
 ## Git workflow
 - Branch: `chore/...`, `feat/...`, `fix/...`. Commit: `ABC-1234 emir kipi özet` (3 harf + '-' + ≤4 hane).
