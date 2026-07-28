@@ -1,0 +1,10 @@
+---
+description: vibe-setup — bir repoyu AI/agent ("vibe coding") hazırlığı için denetler ve eksikleri kurar. Kullanıcı "vibe-setup", "vibe checklist", "audit this project for agent readiness", "bu repoyu AI/agent'a hazırla" gibi bir şey istediğinde devreye gir.
+alwaysApply: false
+---
+Kullanıcı bu repodaki (ya da açık olan başka bir hedef repodaki) AI/agent-hazırlığını denetlemek ya da
+kurmak istiyorsa: `skills/vibe-setup/SKILL.md`'yi oku ve orada anlatılan akışı izle.
+
+Deterministik motor: `skills/vibe-setup/scaffold.sh {audit|init|init-cursor|init-gemini|upgrade|remove|profile}`.
+Sıfırdan kurulum değil, zaten kurulu bir repoyu güncelliyorsan SKILL.md'deki `## Upgrade akışı`'nı izle;
+kaldırıyorsan `## Remove akışı`'nı izle.
