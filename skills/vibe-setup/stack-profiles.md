@@ -11,23 +11,23 @@ engine'in `VIBE_VERSION`'ı; sürüm/upgrade için bkz [SKILL.md](SKILL.md) `## 
 `fmt-scope` = hook fmt davranışı. `staged` → fmt dosya listesi alır, **sadece staged** kontrol edilir (blocking).
 `repo` → araç bütün-proje çalışır → scope edilemez, hook'ta **advisory** (CI zorlasın).
 
-| Stack | Tespit (manifest) | fmt (check) | lint | test | build | SRC_RE | test deseni | fmt-scope |
-|---|---|---|---|---|---|---|---|---|
-| go | `go.mod` | `gofmt -l` | `go vet ./...` | `go test ./...` | `go build ./...` | `\.go$` | `*_test.go` | staged |
-| node | `package.json` | `npx --no-install prettier --check` | `npx --no-install eslint .` | `npm test` | `npm run build` | `\.(js\|ts\|jsx\|tsx)$` | `*.test.*` | staged |
-| node (biome) | `package.json` + `biome.json(c)` | `npx --no-install @biomejs/biome check` | (check kapsar) | `npm test` | `npm run build` | `\.(js\|ts\|jsx\|tsx)$` | `*.test.*` | staged |
-| python | `pyproject.toml`/`setup.py`/`requirements.txt` | `ruff format --check` | `ruff check .` | `pytest` | — | `\.py$` | `test_*.py` | staged |
-| java (maven) | `pom.xml` | `mvn spotless:check` | — | `mvn test` | `mvn package` | `\.java$` | `*Test.java` | repo |
-| java (gradle) | `build.gradle` | `./gradlew spotlessCheck` | — | `./gradlew test` | `./gradlew build` | `\.java$` | `*Test.java` | repo |
-| kotlin | `build.gradle.kts` | `./gradlew ktlintCheck` | — | `./gradlew test` | `./gradlew build` | `\.(kt\|kts)$` | `*Test.kt` | repo |
-| rust | `Cargo.toml` | `cargo fmt --check` | `cargo clippy` | `cargo test` | `cargo build` | `\.rs$` | `*_test.rs` | repo |
-| ruby | `Gemfile` | `rubocop` | `rubocop` | `rspec` | — | `\.rb$` | `*_spec.rb` | staged |
-| dotnet | `*.csproj`/`*.sln` | `dotnet format --verify-no-changes` | — | `dotnet test` | `dotnet build` | `\.cs$` | `*Tests.cs` | repo |
-| php | `composer.json` | `php-cs-fixer fix --dry-run` | `phpstan analyse` | `phpunit` | — | `\.php$` | `*Test.php` | staged |
-| swift | `Package.swift` | `swiftformat --lint` | `swiftlint` | `swift test` | `swift build` | `\.swift$` | `*Tests.swift` | staged |
-| elixir | `mix.exs` | `mix format --check-formatted` | `mix credo` | `mix test` | `mix compile` | `\.(ex\|exs)$` | `*_test.exs` | staged |
-| shell | `*.sh` (manifest yok) | `shfmt -d` | `shellcheck` | `bash tests/run.sh` | — | `\.sh$` | `*_test.sh` | staged |
-| unknown | — | — | — | — | — | — | — | — |
+| Stack | Tespit (manifest) | fmt (check) | lint | test | build | SRC_RE | test deseni | fmt-scope | lint-scope |
+|---|---|---|---|---|---|---|---|---|---|
+| go | `go.mod` | `gofmt -l` | `go vet ./...` | `go test ./...` | `go build ./...` | `\.go$` | `*_test.go` | staged | repo |
+| node | `package.json` | `npx --no-install prettier --check` | `npx --no-install eslint .` | `npm test` | `npm run build` | `\.(js\|ts\|jsx\|tsx)$` | `*.test.*` | staged | repo |
+| node (biome) | `package.json` + `biome.json(c)` | `npx --no-install @biomejs/biome check` | (check kapsar) | `npm test` | `npm run build` | `\.(js\|ts\|jsx\|tsx)$` | `*.test.*` | staged | repo |
+| python | `pyproject.toml`/`setup.py`/`requirements.txt` | `ruff format --check` | `ruff check .` | `pytest` | — | `\.py$` | `test_*.py` | staged | repo |
+| java (maven) | `pom.xml` | `mvn spotless:check` | — | `mvn test` | `mvn package` | `\.java$` | `*Test.java` | repo | repo |
+| java (gradle) | `build.gradle` | `./gradlew spotlessCheck` | — | `./gradlew test` | `./gradlew build` | `\.java$` | `*Test.java` | repo | repo |
+| kotlin | `build.gradle.kts` | `./gradlew ktlintCheck` | — | `./gradlew test` | `./gradlew build` | `\.(kt\|kts)$` | `*Test.kt` | repo | repo |
+| rust | `Cargo.toml` | `cargo fmt --check` | `cargo clippy` | `cargo test` | `cargo build` | `\.rs$` | `*_test.rs` | repo | repo |
+| ruby | `Gemfile` | `rubocop` | `rubocop` | `rspec` | — | `\.rb$` | `*_spec.rb` | staged | repo |
+| dotnet | `*.csproj`/`*.sln` | `dotnet format --verify-no-changes` | — | `dotnet test` | `dotnet build` | `\.cs$` | `*Tests.cs` | repo | repo |
+| php | `composer.json` | `php-cs-fixer fix --dry-run` | `phpstan analyse` | `phpunit` | — | `\.php$` | `*Test.php` | staged | repo |
+| swift | `Package.swift` | `swiftformat --lint` | `swiftlint` | `swift test` | `swift build` | `\.swift$` | `*Tests.swift` | staged | repo |
+| elixir | `mix.exs` | `mix format --check-formatted` | `mix credo` | `mix test` | `mix compile` | `\.(ex\|exs)$` | `*_test.exs` | staged | repo |
+| shell | `*.sh` (manifest yok) | `shfmt -d` | `shellcheck` | `bash tests/run.sh` | — | `\.sh$` | `*_test.sh` | staged | **staged** |
+| unknown | — | — | — | — | — | — | — | — | — |
 
 ## Notlar
 
@@ -42,7 +42,12 @@ engine'in `VIBE_VERSION`'ı; sürüm/upgrade için bkz [SKILL.md](SKILL.md) `## 
 - **kotlin vs java (gradle):** `build.gradle.kts` → kotlin, `build.gradle` (groovy) → java. Karma repo'da
   (ikisi de var) kts önce eşleşir → kotlin; java-ağırlıklıysa komutları elle düzelt.
 - **lint `—`** olanlar advisory bile çalışmaz (ekosistemde standart araç yok / opsiyonel).
+- **lint-scope.** `repo` → araç argümansız bütün-proje çalışır (`go vet ./...`, `ruff check .`,
+  `cargo clippy`…). `staged` → araç dosya listesi ister (shellcheck): hook staged kaynak dosyalarını
+  geçer, staged kaynak yoksa adımı tamamen atlar. **Lint her iki modda da advisory** (bloklamaz);
+  lint-scope sadece "araca ne geçilir" sorusunu yanıtlar, fmt-scope'un aksine blocking'i etkilemez.
 - **shell:** manifest yoksa (`*.sh` var) — test konvansiyonu `tests/*_test.sh` + bağımsız `tests/run.sh` runner.
 - **Bilinmeyen stack:** profil yok → skill kullanıcıya komutları sorar, bu tabloya yeni satır olarak eklenebilir.
-- **Yeni stack eklemek:** `scaffold.sh::detect_profile`'a bir `printf` satırı (9 alan: son alan `FMT_FILE_OK`)
-  + bu tabloya bir satır. Kanonik kaynak script; bu tablo onun insan-okur dökümü (senkron tut).
+- **Yeni stack eklemek:** `scaffold.sh::detect_profile`'a bir `printf` satırı (10 alan: son ikisi
+  `FMT_FILE_OK` ve `LINT_FILE_OK`) + bu tabloya bir satır. Kanonik kaynak script; bu tablo onun
+  insan-okur dökümü (senkron tut).

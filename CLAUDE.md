@@ -37,9 +37,12 @@ Detay: [docs/](docs/).
 ## Gotchas (koddan çıkmaz, tribal)
 - **scaffold.sh kanonik, stack-profiles.md ayna.** Profil eklerken İKİSİNİ de güncelle — yoksa drift
   (geçmişte `.csproj`/`.sln` drift etmişti).
-- **`detect_profile` printf = 9 alan**, sonuncu `FMT_FILE_OK` (`1`=staged-scope fmt, `0`=repo-advisory).
-  Alan eklersen `IFS read` satırını + `profile` çıktısını da güncelle. (`profile` komutu ayrıca `VIBE_VERSION`
-  basar → 10 satır; ama `detect_profile` hâlâ 9 tab-alan.)
+- **`detect_profile` printf = 10 alan**, son ikisi `FMT_FILE_OK` (`1`=staged-scope fmt blocking,
+  `0`=repo-geneli advisory) ve `LINT_FILE_OK` (`1`=lint dosya listesi alır → staged kaynaklar geçilir,
+  staged kaynak yoksa adım atlanır; `0`=argümansız repo-geneli). **Lint her iki modda da advisory.**
+  Bugün sadece `shell` `LINT_FILE_OK=1` (shellcheck dosya ister); diğer tüm stack'ler `0`.
+  Alan eklersen `IFS read` satırını + `profile` çıktısını da güncelle. (`profile` komutu ayrıca
+  `VIBE_VERSION` basar → 11 satır; ama `detect_profile` hâlâ 10 tab-alan.)
 - **`init` asla ezmez** (SKIP). Idempotent — tekrar çalıştırmak güvenli. (Tek istisna `.vibe-setup.json`:
   her init/upgrade'de yeniden yazılır — lockfile gibi meta.)
 - **Sürüm yükseltirken 3 yer:** bir managed template değişince (a) `VIBE_VERSION`++ (b) `artifact_changed_in`'de
