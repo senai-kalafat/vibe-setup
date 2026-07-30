@@ -62,7 +62,8 @@ arar (`MODULE_DIR`); proje artefaktları (CLAUDE.md, docs/, hook) **kökte**, st
 ### Git hook davranışı (herkes için — insan + AI)
 - **pre-commit:** fmt, file-capable stack'te (go/node/python/ruby/php/shell) **sadece staged** dosyalar →
   blocking (eski formatsız dosya temiz commit'i bloklamaz); java/rust/dotnet'te repo-geneli → advisory,
-  asıl kapı CI. lint advisory. doc-sync advisory (`STRICT_DOCS=1` → blocking). Tool kurulu değilse atlar.
+  asıl kapı CI. lint advisory. doc-sync advisory (`git config vibe.strictdocs true` → blocking,
+  `vibe.ticketre` ile aynı desen). Tool kurulu değilse atlar.
 - **commit-msg:** ticket-key **opsiyonel** — `git config vibe.ticketre '<regex>'` set edilirse konu satırını
   zorlar (ör. `'^[A-Z]{3}-[0-9]{1,4} '` = `ABC-1234` formatı); ayarsızsa hiçbir şeyi bloklamaz. Skill kurulumda
   kullanıcıya sorar. Merge/revert/fixup/squash muaf; bypass `git commit --no-verify`.

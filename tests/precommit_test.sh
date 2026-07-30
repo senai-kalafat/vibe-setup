@@ -26,13 +26,15 @@ grep -qF '\.sh$' "$d/.githooks/pre-commit" || bad "shell profili secilmedi (SRC_
 git -C "$d" add -A
 if git -C "$d" commit -q -m 'TST-1 ilk commit' 2>/dev/null; then ok "kaynak+dokuman commit gecti"; else bad "ilk commit bloklandi"; fi
 
-# 2. STRICT_DOCS=1 + sadece kaynak staged → doc-sync bloklar
+# 2. vibe.strictdocs=true + sadece kaynak staged → doc-sync bloklar
 echo 'echo v2' >> "$d/tool.sh"; git -C "$d" add tool.sh
-if STRICT_DOCS=1 git -C "$d" commit -q -m 'TST-2 kaynak' 2>/dev/null; then bad "STRICT_DOCS=1 bloklamadi"; else ok "STRICT_DOCS=1 doc'suz kaynak bloklandi"; fi
+git -C "$d" config vibe.strictdocs true
+if git -C "$d" commit -q -m 'TST-2 kaynak' 2>/dev/null; then bad "vibe.strictdocs=true bloklamadi"; else ok "vibe.strictdocs=true doc'suz kaynak bloklandi"; fi
 [ "$(git -C "$d" rev-list --count HEAD)" = "1" ] && ok "bloklanan commit olusmadi" || bad "bloklanmasina ragmen commit olustu"
+git -C "$d" config --unset vibe.strictdocs
 
-# 3. aynı staged durum, STRICT_DOCS'suz → doc-sync advisory, geçer
-if git -C "$d" commit -q -m 'TST-3 kaynak' 2>/dev/null; then ok "STRICT_DOCS'suz advisory gecti"; else bad "advisory modda bloklandi"; fi
+# 3. aynı staged durum, vibe.strictdocs ayarsız → doc-sync advisory, geçer
+if git -C "$d" commit -q -m 'TST-3 kaynak' 2>/dev/null; then ok "vibe.strictdocs ayarsiz advisory gecti"; else bad "advisory modda bloklandi"; fi
 
 # 4. commit-msg entegrasyonu — vibe.ticketre ayarsızken serbest, set edilince bloklar
 echo 'echo v3' >> "$d/tool.sh"; git -C "$d" add tool.sh

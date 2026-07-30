@@ -18,7 +18,7 @@ set -euo pipefail
 
 # Şema versiyonu (tamsayı). Bir managed template VEYA migration değiştiğinde +1; artifact_changed_in'i de güncelle.
 # plugin.json semver'i ayrı (marketplace); bu sayı upgrade/migration anahtarıdır.
-VIBE_VERSION=4
+VIBE_VERSION=5
 
 APPLY=0
 ARGS=()
@@ -102,7 +102,7 @@ extra_paths() {
 }
 # Her artifact en son hangi VIBE_VERSION'da değişti (stamp + manifest v + upgrade raporu için).
 artifact_changed_in() { case "$1" in
-  .githooks/pre-commit) echo 2 ;;   # v2: sed→bash literal-replace (node SRC_RE `|` delimiter çakışması fix)
+  .githooks/pre-commit) echo 5 ;;   # v5: doc-sync STRICT_DOCS env-var yerine git config vibe.strictdocs (kalıcı, vibe.ticketre ile aynı desen)
   .githooks/commit-msg) echo 3 ;;   # v3: ticket-key hard-coded → opsiyonel (git config vibe.ticketre; ayarsız = bloklamaz)
   .gitmessage)          echo 3 ;;   # v3: ticket-key opsiyonel ibaresi
   AGENTS.md)            echo 4 ;;   # v4: Gemini AGENTS.md okumaz iddiası düzeltildi; Codex/Kimi Code isimlendirildi
@@ -187,7 +187,7 @@ render_precommit() {
 #!/usr/bin/env bash
 # vibe-setup:v@VER@ (managed; elle düzenlersen upgrade EZMEZ → CONFLICT → LLM merge)
 # Repo-tracked pre-commit — herkes için (insan + AI). Enable: git config core.hooksPath .githooks
-# Stack: @STACK@ | doc-sync'i blocking yap: STRICT_DOCS=1 | Bypass tümü: --no-verify
+# Stack: @STACK@ | doc-sync'i blocking yap: git config vibe.strictdocs true | Bypass tümü: --no-verify
 # fmt: file-capable stack'te SADECE staged dosyalar (blocking); değilse repo-geneli (advisory, CI zorlasın).
 set -euo pipefail
 staged="$(git diff --cached --name-only --diff-filter=ACM || true)"
@@ -221,12 +221,14 @@ if [ "@LINT@" != "-" ] && command -v "$lint_bin" >/dev/null 2>&1; then
   [ -s /tmp/vibe_lint ] && { echo "ℹ lint (bloklamaz):" >&2; sed 's/^/  /' /tmp/vibe_lint >&2; }
 fi
 
-# 3. doc-sync (advisory default; STRICT_DOCS=1 → blocking) — kaynak değişti, doküman değişmediyse
+# 3. doc-sync (advisory default; git config vibe.strictdocs true → blocking) — kaynak değişti,
+#    doküman değişmediyse. vibe.ticketre ile AYNI desen: repo-local git config, kalıcı.
 src=0; printf '%s\n' "$staged" | grep -qE '@SRCRE@' && src=1
 doc=0; printf '%s\n' "$staged" | grep -qE '(^docs/.*\.md$|(^|/)(README|CLAUDE|AGENTS)\.md$)' && doc=1
 if [ "$src" = 1 ] && [ "$doc" = 0 ]; then
   echo "ℹ doc-sync: kaynak değişti, doküman güncellenmedi. docs/ + README/CLAUDE/AGENTS gözden geçir." >&2
-  [ "${STRICT_DOCS:-}" = "1" ] && { echo "  STRICT_DOCS=1 → blocking." >&2; fail=1; }
+  strict="$(git config --get --bool vibe.strictdocs 2>/dev/null || echo false)"
+  [ "$strict" = "true" ] && { echo "  vibe.strictdocs=true → blocking." >&2; fail=1; }
 fi
 exit "$fail"
 EOF
