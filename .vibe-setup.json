@@ -1,13 +1,13 @@
 {
   "vibeVersion": 6,
   "stack": "shell",
-  "generatedAt": "2026-07-30T07:30:52Z",
+  "generatedAt": "2026-07-30T07:37:05Z",
   "managed": {
     "AGENTS.md": { "v": 4, "sha": "3133797768", "created": false },
     "docs/README.md": { "v": 1, "sha": "693105294", "created": false },
     "docs/architecture/decisions/0000-template.md": { "v": 1, "sha": "3977487725", "created": false },
     ".gitmessage": { "v": 3, "sha": "1225286426", "created": false },
-    ".githooks/pre-commit": { "v": 6, "sha": "2315176616", "created": false },
+    ".githooks/pre-commit": { "v": 6, "sha": "1042320377", "created": false },
     ".githooks/commit-msg": { "v": 3, "sha": "3284126891", "created": false },
     ".claude/settings.json": { "v": 1, "sha": "3900946474", "created": false },
     ".github/pull_request_template.md": { "v": 1, "sha": "2401060311", "created": false }

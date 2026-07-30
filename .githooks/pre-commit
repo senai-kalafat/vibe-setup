@@ -10,7 +10,9 @@ fail=0
 
 # 1. fmt — tool kuruluysa çalışır; file-capable ise staged-scope & blocking, değilse repo-geneli & advisory.
 fmt_bin="$(printf '%s' "shfmt -d" | awk '{print $1}')"
+# shellcheck disable=SC2050  # shfmt -d/1 üretim anında sabitlenir — render sonrası sabit ifade normal
 if [ "shfmt -d" != "-" ] && command -v "$fmt_bin" >/dev/null 2>&1; then
+  # shellcheck disable=SC2050
   if [ "1" = "1" ]; then
     staged_src="$(printf '%s\n' "$staged" | grep -E '\.sh$' || true)"
     if [ -n "$staged_src" ]; then
@@ -30,6 +32,7 @@ fi
 
 # 2. lint (advisory) — tool kuruluysa
 lint_bin="$(printf '%s' "shellcheck" | awk '{print $1}')"
+# shellcheck disable=SC2050  # shellcheck üretim anında sabitlenir — render sonrası sabit ifade normal
 if [ "shellcheck" != "-" ] && command -v "$lint_bin" >/dev/null 2>&1; then
   lint_out="$(mktemp)"                       # sabit /tmp yolu YOK: çok-kullanıcılı makinede symlink riski + paralel commit çakışması
   shellcheck >"$lint_out" 2>&1 || true

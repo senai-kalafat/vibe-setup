@@ -200,7 +200,9 @@ fail=0
 
 # 1. fmt — tool kuruluysa çalışır; file-capable ise staged-scope & blocking, değilse repo-geneli & advisory.
 fmt_bin="$(printf '%s' "@FMT@" | awk '{print $1}')"
+# shellcheck disable=SC2050  # @FMT@/@FMTFILEOK@ üretim anında sabitlenir — render sonrası sabit ifade normal
 if [ "@FMT@" != "-" ] && command -v "$fmt_bin" >/dev/null 2>&1; then
+  # shellcheck disable=SC2050
   if [ "@FMTFILEOK@" = "1" ]; then
     staged_src="$(printf '%s\n' "$staged" | grep -E '@SRCRE@' || true)"
     if [ -n "$staged_src" ]; then
@@ -220,6 +222,7 @@ fi
 
 # 2. lint (advisory) — tool kuruluysa
 lint_bin="$(printf '%s' "@LINT@" | awk '{print $1}')"
+# shellcheck disable=SC2050  # @LINT@ üretim anında sabitlenir — render sonrası sabit ifade normal
 if [ "@LINT@" != "-" ] && command -v "$lint_bin" >/dev/null 2>&1; then
   lint_out="$(mktemp)"                       # sabit /tmp yolu YOK: çok-kullanıcılı makinede symlink riski + paralel commit çakışması
   @LINT@ >"$lint_out" 2>&1 || true

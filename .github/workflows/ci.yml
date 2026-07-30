@@ -16,7 +16,10 @@ jobs:
 
   shellcheck:
     runs-on: ubuntu-latest # shellcheck runner'da hazır
-    continue-on-error: true # lint advisory (CLAUDE.md gotcha); asıl blocking kapı = test
+    # BLOCKING (warning+): ağaç error/warning seviyesinde temiz tutuluyor. `info` seviyesi HARİÇ —
+    # SC2015 (`A && B || C`) bu kod tabanında 200+ yerde bilinçli desen: row/ok/bad her zaman 0 döner,
+    # yani C asla A doğruyken çalışmaz. SC2094 (`render_artifact "$1" > "$1"`) de yanlış pozitif:
+    # render_artifact dosyayı okumaz, write_managed zaten sadece dosya YOKken çalışır.
     steps:
       - uses: actions/checkout@v4
-      - run: shellcheck skills/vibe-setup/scaffold.sh tests/*.sh .githooks/pre-commit .githooks/commit-msg
+      - run: shellcheck --severity=warning skills/vibe-setup/scaffold.sh tests/*.sh scripts/*.sh .githooks/pre-commit .githooks/commit-msg

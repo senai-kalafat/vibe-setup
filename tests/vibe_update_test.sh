@@ -171,7 +171,7 @@ if [ -d "$tmp/caseprobe" ]; then
   git_c -C "$case_origin" add -A && git_c -C "$case_origin" commit -q -m "case baseline"
   git_c -C "$case_origin" tag v8.0.0
   case_install="$tmp/CaseInstall"; git clone -q "$case_origin" "$case_install" 2>/dev/null
-  case_lower="$(dirname "$case_install")/$(basename "$case_install" | tr 'A-Z' 'a-z')"
+  case_lower="$(dirname "$case_install")/$(basename "$case_install" | tr '[:upper:]' '[:lower:]')"
   out="$(bash "$UPDATE_SCRIPT" "$case_lower" 2>&1)"; code=$?
   [ "$code" -eq 0 ] && ok "case-variant yol: kabul edildi (dosya sistemi case-insensitive)" || bad "case-variant yol: reddedildi (kod $code): $out"
 else

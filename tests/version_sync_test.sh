@@ -41,7 +41,7 @@ cat > "$work/.cursor-plugin/plugin.json" <<'EOF'
 }
 EOF
 
-out="$(bash "$SYNC" "$work" 2>&1)"
+bash "$SYNC" "$work" >/dev/null 2>&1
 
 [ "$(grep -c '"version": "9.9.9"' "$work/.claude-plugin/marketplace.json")" = "2" ] && ok "marketplace.json her iki version alani da guncellendi" || bad "marketplace.json version guncellemesi eksik/yanlis"
 grep -q '"version": "9.9.9"' "$work/.cursor-plugin/plugin.json" && ok "cursor-plugin.json guncellendi" || bad "cursor-plugin.json guncellenmedi"
@@ -64,7 +64,7 @@ printf '%s' "$out2" | grep -q 'SKIP' && ok "eksik dosya icin SKIP basildi" || ba
 
 # kaynak plugin.json hic yoksa net hata + nonzero exit
 work3="$tmp/repo3"; mkdir -p "$work3"
-out3="$(bash "$SYNC" "$work3" 2>&1)"; code3=$?
+bash "$SYNC" "$work3" >/dev/null 2>&1; code3=$?
 [ "$code3" -ne 0 ] && ok "kaynak plugin.json yokken nonzero exit" || bad "kaynak plugin.json yokken exit 0 (hata verilmeliydi)"
 
 echo "version_sync_test: $pass passed, $fail failed"
