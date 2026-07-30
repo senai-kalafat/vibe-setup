@@ -6,6 +6,7 @@
 ## BAĞLAM
 - [ ] CLAUDE.md — yalın, emir kipli, docs'a **işaret eder** (içerik dökmez)
 - [ ] Root README — hızlı başlangıç + linkler
+- [ ] README mimari diagramı — üst-seviye özet (mermaid, dış bağlantılar + ne iş yaptığı; çok detaya girmez)
 - [ ] AGENTS.md — CLAUDE.md'ye ayna (çapraz araç); gerekirse GEMINI.md
 - [ ] (ops) Cursor uyumu — `.cursor/rules/*.mdc` + `.cursorrules` → CLAUDE.md'ye yönlendirir
 - [ ] (ops) llms.txt — araç-bağımsız ince repo haritası (llmstxt.org); sadece dış LLM tüketicisi varsa
@@ -14,7 +15,7 @@
 
 ## BİLGİ TABANI
 - [ ] İndeksli docs/ (giriş noktası, ör. docs/README.md)
-- [ ] Mimari genel bakış + akış diyagramları (mermaid)
+- [ ] Detaylı mimari diagramlar (modül/veri akışı; docs/architecture/overview.md)
 - [ ] ADR'lar (NEDEN) + 0000-template
 - [ ] Domain sözlüğü (proje jargonu)
 - [ ] Kurulum + operasyon rehberleri

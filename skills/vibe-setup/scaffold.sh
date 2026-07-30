@@ -268,7 +268,7 @@ EOF
 Tüm dokümantasyonun giriş noktası.
 
 ## Mimari
-- [Genel Bakış](architecture/overview.md) <TODO>
+- [Genel Bakış](architecture/overview.md) <TODO> — detaylı diagramlar burada (README'deki özet diagrama ek)
 - [Mimari Kararlar (ADR)](architecture/decisions/) — neden böyle yapıldı
 
 ## Domain

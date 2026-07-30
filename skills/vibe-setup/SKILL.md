@@ -124,6 +124,13 @@ Onaylanan her madde için:
   miras almaz (Faz 3 context-mode'u zaten zorunlu kurdu; bu, o kurulumun subagent'lara da işlemesini
   sağlayan tribal bilgi).
 - **docs**: iskeletteki `<TODO>`'ları gerçek içerikle değiştir (kod haritası, conventions).
+- **README mimari diagramı (zorunlu deliverable):** README.md'nin başına (girişten hemen sonra) tek bir
+  mermaid diagram + 2-3 cümle özet ekle — proje tek kutu, çevresinde **dış bağlantılar** (DB, harici
+  API'ler, 3rd-party servisler, kullanıcı/istemci). Çok detaya girme, sadece sistem-sınırı görünümü.
+  Repoyu **oku**, gerçek bağlantıları çıkar — uydurma. Proje gerçekten diagram'a uygun değilse (ör.
+  tek-dosyalık script), Faz 6'da bunu gerekçeli olarak not düş — sessizce atlama.
+  `docs/architecture/overview.md`'ye (`<TODO>`'yu doldurarak) daha DETAYLI diagramlar (modül/veri akışı)
+  ekle, README'ye link ver.
 - **(ops) llms.txt**: init bunu **düşürmez** (iç repoda tüketicisi yok). Sadece dış LLM/dokümantasyon
   sitesi tüketecekse `llmstxt.org` formatında elle ekle.
 - **Test harness**: MODULE_DIR'de saf/deterministik bir fonksiyon bul, dile uygun **gerçek geçen** test yaz
@@ -171,6 +178,7 @@ Onaylanan her madde için:
   | .gitmessage | `<TICKET-KEY>` formatını projeye uyarla |
   | .claude/settings.json | plugin enable / deny yolları onayı (gerekirse) |
   | Codex CLI / Gemini CLI (Antigravity dışı) / Kimi Code | context-mode MCP kaydı (opsiyonel — zorunlu değil) |
+  | README mimari diagramı | bilinçli atlandıysa: neden (proje uygun değil) burada gerekçelendirilir |
   | … | (sadece gerçekten eksik/insan-gerektiren satırlar) |
 
   Sadece **açık kalan** maddeleri listele; tamamlananları koyma.
