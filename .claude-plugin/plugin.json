@@ -1,6 +1,6 @@
 {
   "name": "vibe-setup",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Audit any repository for AI/agent (vibe coding) readiness, scaffold the missing pieces, upgrade an already-set-up repo to a newer version, and remove what it created — stack- and language-agnostic.",
   "author": {
     "name": "Senai Kalafat"
