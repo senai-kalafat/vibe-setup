@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# vibe-setup:v6 (managed; elle düzenlersen upgrade EZMEZ → CONFLICT → LLM merge)
+# vibe-setup:v7 (managed; elle düzenlersen upgrade EZMEZ → CONFLICT → LLM merge)
 # Repo-tracked pre-commit — herkes için (insan + AI). Enable: git config core.hooksPath .githooks
 # Stack: shell | doc-sync'i blocking yap: git config vibe.strictdocs true | Bypass tümü: --no-verify
 # fmt: file-capable stack'te SADECE staged dosyalar (blocking); değilse repo-geneli (advisory, CI zorlasın).
@@ -7,6 +7,8 @@ set -euo pipefail
 staged="$(git diff --cached --name-only --diff-filter=ACM || true)"
 [ -z "$staged" ] && exit 0
 fail=0
+# staged kaynak dosyaları — fmt ve lint aynı listeyi paylaşır (tek kaynak).
+staged_src="$(printf '%s\n' "$staged" | grep -E '\.sh$' || true)"
 
 # 1. fmt — tool kuruluysa çalışır; file-capable ise staged-scope & blocking, değilse repo-geneli & advisory.
 fmt_bin="$(printf '%s' "shfmt -d" | awk '{print $1}')"
@@ -14,7 +16,6 @@ fmt_bin="$(printf '%s' "shfmt -d" | awk '{print $1}')"
 if [ "shfmt -d" != "-" ] && command -v "$fmt_bin" >/dev/null 2>&1; then
   # shellcheck disable=SC2050
   if [ "1" = "1" ]; then
-    staged_src="$(printf '%s\n' "$staged" | grep -E '\.sh$' || true)"
     if [ -n "$staged_src" ]; then
       # shellcheck disable=SC2086
       if ! out="$(shfmt -d $staged_src 2>&1)"; then
@@ -30,13 +31,26 @@ if [ "shfmt -d" != "-" ] && command -v "$fmt_bin" >/dev/null 2>&1; then
   fi
 fi
 
-# 2. lint (advisory) — tool kuruluysa
+# 2. lint (advisory — her iki modda da BLOKLAMAZ) — tool kuruluysa.
+# LINT_FILE_OK=1 → araç dosya listesi ister (ör. shellcheck): staged kaynak dosyaları geçilir,
+# staged kaynak yoksa adım tamamen atlanır (argümansız çağırıp usage hatası basmak yerine).
 lint_bin="$(printf '%s' "shellcheck" | awk '{print $1}')"
-# shellcheck disable=SC2050  # shellcheck üretim anında sabitlenir — render sonrası sabit ifade normal
+# shellcheck disable=SC2050  # shellcheck/1 üretim anında sabitlenir — render sonrası sabit ifade normal
 if [ "shellcheck" != "-" ] && command -v "$lint_bin" >/dev/null 2>&1; then
   lint_out="$(mktemp)"                       # sabit /tmp yolu YOK: çok-kullanıcılı makinede symlink riski + paralel commit çakışması
-  shellcheck >"$lint_out" 2>&1 || true
-  [ -s "$lint_out" ] && { echo "ℹ lint (bloklamaz):" >&2; sed 's/^/  /' "$lint_out" >&2; }
+  lint_ran=0
+  # shellcheck disable=SC2050
+  if [ "1" = "1" ]; then
+    if [ -n "$staged_src" ]; then
+      # shellcheck disable=SC2086
+      shellcheck $staged_src >"$lint_out" 2>&1 || true
+      lint_ran=1
+    fi
+  else
+    shellcheck >"$lint_out" 2>&1 || true
+    lint_ran=1
+  fi
+  [ "$lint_ran" = 1 ] && [ -s "$lint_out" ] && { echo "ℹ lint (bloklamaz):" >&2; sed 's/^/  /' "$lint_out" >&2; }
   rm -f "$lint_out"
 fi
 
