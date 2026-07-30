@@ -16,8 +16,8 @@ vibe-setup'a özgü jargon. Koddan çıkarılması zor terimler burada; mimari i
 | **audit** | Hazırlık denetimi — ✅/❌/— tablosu + makine-okur `SCORE=N/M` footer. |
 | **init** | Eksik agnostik iskeletleri düşürür. Var olanı **asla ezmez** (SKIP). Idempotent. |
 | **init-cursor** | Cursor kural dosyalarını ekler (`.cursor/rules/project.mdc` + `.cursorrules` → CLAUDE.md'ye yönlendirir). |
-| **Ticket-key** | Commit konu satırı formatı: 3 BÜYÜK harf + '-' + ≤4 hane (ör. `VAN-3195`). `.githooks/commit-msg` zorlar; merge/revert/fixup/squash muaf. |
-| **doc-sync** | pre-commit kontrolü: kaynak değişti ama doküman (docs/ + README/CLAUDE/AGENTS) değişmediyse uyarır. Default advisory; `STRICT_DOCS=1` → blocking. |
+| **Ticket-key** | Commit konu satırı formatı: 3 BÜYÜK harf + '-' + ≤4 hane (ör. `VAN-3195`). **Opsiyonel** — `.githooks/commit-msg` sadece `git config vibe.ticketre` set edilmişse zorlar; merge/revert/fixup/squash muaf. |
+| **doc-sync** | pre-commit kontrolü: kaynak değişti ama doküman (docs/ + README/CLAUDE/AGENTS) değişmediyse uyarır. Default advisory; `git config vibe.strictdocs true` → blocking. |
 | **advisory / blocking** | Hook kapısı bloklamaz (uyarı, exit 0) / bloklar (exit 1). Gürültülü/repo-geneli kapılar advisory; staged-scope kapılar blocking. |
 | **BEFORE / AFTER skoru** | Skill audit'i akış başında ve sonunda çalıştırıp `SCORE=N/M`'leri kıyaslar (uyumluluk tablosu). |
 | **Token-bombası yolları** | settings.json `permissions.deny`'a eklenen büyük üretilmiş/vendor asset'leri (derlenmiş bundle, swagger, dist/) — agent okuyup bağlamı patlatmasın. |

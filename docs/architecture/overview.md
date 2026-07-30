@@ -7,7 +7,7 @@ detay [CLAUDE.md](../../CLAUDE.md) ve [SKILL.md](../../skills/vibe-setup/SKILL.m
 
 - **Deterministik motor** — [scaffold.sh](../../skills/vibe-setup/scaffold.sh): saf bash, tek
   opsiyonel dep `jq`. Stack tespiti, agnostik iskelet, komut substitüsyonu, sürümlü drift tespiti. Komutlar:
-  `audit` (hazırlık tablosu + `SCORE=N/M`), `init` (eksik iskelet, **ezmez**), `init-cursor`/`init-gemini`
+  `audit` (hazırlık tablosu + `SCORE=N/M`), `init` (eksik iskelet, **ezmez**), `init-cursor`/`init-gemini`/`init-aider`
   (Cursor/Gemini CLI kuralları), `upgrade` (sürüm taşıma; UPDATE/ADD/CONFLICT), `remove` (dry-run
   varsayılan, `--apply` ile sadece vibe-setup'ın yarattığı değişmemiş dosyaları siler), `profile`
   (9 alan + `VIBE_VERSION`).
@@ -42,9 +42,11 @@ flowchart TD
 ## Git hook davranışı (herkes için — insan + AI)
 
 - **pre-commit:** fmt, file-capable stack'te (go/node/python/ruby/php/shell) **sadece staged** dosyalar →
-  blocking; java/rust/dotnet'te repo-geneli → advisory (asıl kapı CI). lint advisory. doc-sync advisory
-  (`STRICT_DOCS=1` → blocking). Tool kurulu değilse atlar.
-- **commit-msg:** konu satırı `ABC-1234` ticket-key formatını zorlar (3 BÜYÜK harf + '-' + ≤4 hane);
+  blocking; java/rust/dotnet'te repo-geneli → advisory (asıl kapı CI). lint advisory (çıktı `mktemp`'e
+  yazılır, sabit `/tmp` yolu yok). doc-sync advisory (`git config vibe.strictdocs true` → blocking).
+  Tool kurulu değilse atlar.
+- **commit-msg:** ticket-key **opsiyonel** — `git config vibe.ticketre '<regex>'` set edilirse konu
+  satırını zorlar (ör. `'^[A-Z]{3}-[0-9]{1,4} '` = `ABC-1234`); ayarsızsa bloklamaz.
   merge/revert/fixup/squash muaf; bypass `git commit --no-verify`.
 
 ## Sürümleme + upgrade

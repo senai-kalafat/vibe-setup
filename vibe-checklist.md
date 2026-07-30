@@ -39,7 +39,7 @@
 
 ## EKLENTİLER / HOOK'LAR
 - [x] Git hook (core.hooksPath) herkes için → [.githooks/pre-commit](.githooks/pre-commit), `core.hooksPath=.githooks` aktif
-- [x] Doc-sync hook tracked → [.githooks/pre-commit](.githooks/pre-commit) (advisory; `STRICT_DOCS=1` blocking)
+- [x] Doc-sync hook tracked → [.githooks/pre-commit](.githooks/pre-commit) (advisory; `git config vibe.strictdocs true` blocking)
 - [x] Gürültülü kapılar advisory — shell fmt staged-scope, lint/doc-sync advisory
 - [x] Plugin/skill paylaşım kararı — bu repo plugin → [.claude-plugin/marketplace.json](.claude-plugin/marketplace.json)
 - [x] settings.json tracked, settings.local.json gitignore → [.gitignore](.gitignore)
