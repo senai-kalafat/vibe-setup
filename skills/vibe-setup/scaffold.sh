@@ -18,7 +18,7 @@ set -euo pipefail
 
 # Şema versiyonu (tamsayı). Bir managed template VEYA migration değiştiğinde +1; artifact_changed_in'i de güncelle.
 # plugin.json semver'i ayrı (marketplace); bu sayı upgrade/migration anahtarıdır.
-VIBE_VERSION=5
+VIBE_VERSION=6
 
 APPLY=0
 ARGS=()
@@ -102,7 +102,7 @@ extra_paths() {
 }
 # Her artifact en son hangi VIBE_VERSION'da değişti (stamp + manifest v + upgrade raporu için).
 artifact_changed_in() { case "$1" in
-  .githooks/pre-commit) echo 5 ;;   # v5: doc-sync STRICT_DOCS env-var yerine git config vibe.strictdocs (kalıcı, vibe.ticketre ile aynı desen)
+  .githooks/pre-commit) echo 6 ;;   # v6: lint çıktısı sabit /tmp/vibe_lint yerine mktemp (symlink riski + paralel commit çakışması)
   .githooks/commit-msg) echo 3 ;;   # v3: ticket-key hard-coded → opsiyonel (git config vibe.ticketre; ayarsız = bloklamaz)
   .gitmessage)          echo 3 ;;   # v3: ticket-key opsiyonel ibaresi
   AGENTS.md)            echo 4 ;;   # v4: Gemini AGENTS.md okumaz iddiası düzeltildi; Codex/Kimi Code isimlendirildi
@@ -221,8 +221,10 @@ fi
 # 2. lint (advisory) — tool kuruluysa
 lint_bin="$(printf '%s' "@LINT@" | awk '{print $1}')"
 if [ "@LINT@" != "-" ] && command -v "$lint_bin" >/dev/null 2>&1; then
-  @LINT@ >/tmp/vibe_lint 2>&1 || true
-  [ -s /tmp/vibe_lint ] && { echo "ℹ lint (bloklamaz):" >&2; sed 's/^/  /' /tmp/vibe_lint >&2; }
+  lint_out="$(mktemp)"                       # sabit /tmp yolu YOK: çok-kullanıcılı makinede symlink riski + paralel commit çakışması
+  @LINT@ >"$lint_out" 2>&1 || true
+  [ -s "$lint_out" ] && { echo "ℹ lint (bloklamaz):" >&2; sed 's/^/  /' "$lint_out" >&2; }
+  rm -f "$lint_out"
 fi
 
 # 3. doc-sync (advisory default; git config vibe.strictdocs true → blocking) — kaynak değişti,
