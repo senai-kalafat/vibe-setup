@@ -124,7 +124,13 @@ claude plugin install vibe-setup@vibe-setup
 
 Sonra herhangi bir projede: `/vibe-setup`
 
-**Güncelleme:** `claude plugin marketplace update vibe-setup`
+**Güncelleme** — iki adım (ilki kaynağı tazeler, ikincisi kurulu sürümü yükseltir):
+```bash
+claude plugin marketplace update vibe-setup
+claude plugin update vibe-setup@vibe-setup     # ardından Claude Code'u yeniden başlat
+```
+Tek başına `marketplace update` yetmez: kurulu plugin ayrı bir snapshot'tır, sürümü ancak
+`plugin update` yükseltir (`claude plugin list` ile doğrula).
 
 ### Ekip geneli (repo-tracked)
 
