@@ -112,16 +112,25 @@ ezmez, LLM içeriği (CLAUDE.md/test) auto-touch edilmez — sadece yeni checkli
 
 ## Kurulum
 
-### Önkoşul
-`bash` + `git`. `scaffold.sh` saf bash — başka dep yok. Opsiyonel: `jq` (yoksa audit yalnız
-`permissions` satırlarını atlar), `shellcheck`/`shfmt` (pre-commit hook kuruluysa kullanır, kurulu
-değilse o adımı sessizce atlar).
+**Önkoşul:** `bash` + `git`. Başka dep yok. (Ops: `jq` yoksa audit izin satırlarını atlar;
+`shellcheck`/`shfmt` yoksa hook o adımı sessizce geçer.)
 
 ### Claude Code
 
-Marketplace `git` kaynağıyla eklenir.
+```bash
+claude plugin marketplace add senai-kalafat/vibe-setup
+claude plugin install vibe-setup@vibe-setup
+```
 
-**Bireysel** — kullanıcı `~/.claude/settings.json`'a:
+Sonra herhangi bir projede: `/vibe-setup`
+
+**Güncelleme:** `claude plugin marketplace update vibe-setup`
+
+### Ekip geneli (repo-tracked)
+
+Herkesin elle kurmasını istemiyorsan, projenin `.claude/settings.json`'ına ekle (commit'le) — projeyi
+açan güven prompt'uyla otomatik kurar:
+
 ```json
 {
   "extraKnownMarketplaces": {
@@ -131,47 +140,33 @@ Marketplace `git` kaynağıyla eklenir.
 }
 ```
 
-**Ekip geneli** — aynı iki bloğu projenin `.claude/settings.json`'ına ekle (tracked). Projeyi açan,
-güven prompt'uyla otomatik kurar.
+### Cursor / CLI'sız kullanım
 
-Yükledikten sonra herhangi bir projede `/vibe-setup` ile çağır.
-
-### Cursor
-
-Cursor'da Claude Code plugin marketplace yok — skill iki parçayla kullanılır:
-
-1. **Repoyu klonla** (bir kez, ortak bir yere):
-   ```
-   git clone https://github.com/senai-kalafat/vibe-setup.git
-   ```
-2. **Akıllı akış (Cursor agent):** hedef projede Cursor sohbetinde `SKILL.md`'yi bağlam ver —
-   `@skills/vibe-setup/SKILL.md` ile referansla ya da içeriğini hedef repoda `.cursor/rules/vibe-setup.mdc`
-   olarak kopyala. Cursor agent orkestrasyon akışını izler (audit → onay → iskelet → içerik → doğrula).
-3. **Deterministik motor (Cursor'sız da):** `scaffold.sh` saf bash, dış dep yok — doğrudan çalıştır:
-   ```
-   bash /yol/vibe-setup/skills/vibe-setup/scaffold.sh audit .   # audit | init | init-cursor | init-gemini | init-aider | upgrade | remove | profile
-   ```
-   `init-cursor` hedef repoya `.cursor/rules/project.mdc` + `.cursorrules` düşürür (CLAUDE.md'ye yönlendirir);
-   `init-gemini` aynı şekilde `GEMINI.md` düşürür; `init-aider` `.aider.conf.yml` düşürür (Aider AGENTS.md'yi
-   native okumaz, `read: AGENTS.md` ile açıkça işaretler). `remove` kurulanları geri alır (önce dry-run,
-   sonra `--apply`).
-
-> AGENTS.md tek-kaynak ayna olduğundan, Claude tarafıyla kurulan bir repoyu Cursor da `init-cursor`
-> olmadan okuyabilir; `init-cursor` sadece Cursor-yerel kural dosyalarını ekler.
-
-Repo ayrıca `.cursor-plugin/plugin.json` + `.cursor-plugin/vibe-setup.mdc` taşır — Cursor'ın ileride
-otomatik keşfedebileceği bir manifest (Claude marketplace girişiyle aynı şekle sahip); bugün için
-pratik kurulum yolu hâlâ yukarıdaki 3 adım.
-
-### Güncelleme (vibe-setup'ın kendi kopyası)
-
-Kurulu kopyanı en son sürüme çekmek için (bu, hedef repolara scaffold eden `scaffold.sh upgrade`'den
-AYRI — o hedef reponun dosyalarını günceller, bu ARACIN KENDİ repo kopyasını günceller):
+```bash
+git clone https://github.com/senai-kalafat/vibe-setup.git
 ```
-bash /yol/vibe-setup/scripts/vibe-update.sh
+
+- **Cursor agent'ıyla:** hedef projede sohbete `@skills/vibe-setup/SKILL.md` ver — akışı izler
+  (audit → onay → iskelet → içerik → doğrula).
+- **Sadece motor (agent'sız):** `bash /yol/vibe-setup/skills/vibe-setup/scaffold.sh audit .`
+  Komutlar: `audit | init | init-cursor | init-gemini | init-aider | upgrade | remove | profile`
+
+**Güncelleme:** `bash /yol/vibe-setup/scripts/vibe-update.sh` — tag-tabanlı; kopyan elle
+değiştirilmişse asla otomatik merge etmez.
+
+> Claude tarafıyla kurulmuş bir repoyu Cursor da okuyabilir (AGENTS.md tek-kaynak ayna);
+> `init-cursor` sadece Cursor-yerel kural dosyalarını ekler.
+
+### Kurulu repoları yeni sürüme taşımak
+
+Yukarıdakiler **aracı** günceller. Aracı güncelledikten sonra, daha önce kurulmuş **her projede**:
+
+```bash
+bash /yol/vibe-setup/skills/vibe-setup/scaffold.sh upgrade .
 ```
-Tag-tabanlı (branch-HEAD değil), sapma varsa asla otomatik merge etmez. Tam release süreci ve
-sürüm çıkarma detayları: [RELEASE.md](RELEASE.md).
+
+Dokunulmamış dosyalar otomatik yenilenir, elle düzenlenmişler CONFLICT olarak bırakılır (asla ezilmez).
+Detay: [RELEASE.md](RELEASE.md).
 
 ## Kullanım
 
@@ -290,7 +285,7 @@ Skill bu maddelere göre denetler ve dolu halini repo köküne `vibe-checklist.m
 ## Yapı
 ```
 .claude-plugin/{plugin.json, marketplace.json}   # Claude Code plugin/marketplace manifest
-.cursor-plugin/{plugin.json, vibe-setup.mdc}     # Cursor discovery manifest (bkz Kurulum)
+.cursor-plugin/{plugin.json, vibe-setup.mdc}     # Cursor discovery manifest (ileriye dönük)
 skills/vibe-setup/
   SKILL.md                  # orchestration
   scaffold.sh               # audit / init / init-cursor / init-gemini / upgrade / remove / profile
