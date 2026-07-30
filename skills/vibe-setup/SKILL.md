@@ -62,6 +62,10 @@ Bundled dosyalar bu skill dizinindedir: `scaffold.sh`, `stack-profiles.md`, `vib
   Varsayılan **zorlamasız** (hook hiçbir şeyi bloklamaz). Kullanıcı isterse formatı da sor —
   standart `ABC-1234` mi, özel regex mi? Cevaba göre Faz 3 sonrasında:
   `git config vibe.ticketre '^[A-Z]{3}-[0-9]{1,4} '` (ya da kullanıcının regex'i). İstemezse hiçbir şey yapma.
+- **doc-sync sorusu (zorunlu SOR, varsayma):** "doc-sync'i zorlayıcı (blocking) yapayım mı?" — kaynak
+  değişip doküman değişmezse commit'i engellesin mi? Varsayılan **öneri EVET** (ticket-key'in aksine —
+  ama yine de sorulur, kullanıcı hayır diyebilir). Evet ise Faz 3 sonrasında: `git config vibe.strictdocs
+  true` çalıştır. Hayır ise hiçbir şey yapma (hook advisory kalır).
 - **Hangi maddeleri kuralım?** diye sor. Kullanıcı seçmeden dosya üretme.
   Tehlikeli/dışa-dönük olanları (plugin enable, harici repo, izin genişletme) ayrıca işaretle —
   bunlar açık onay ister, güvenlik sınıflandırıcısı da bloklayabilir.
@@ -127,8 +131,8 @@ Onaylanan her madde için:
 - **pre-commit**: nested module ise `cd <MODULE_DIR>` ekle (staged yolları MODULE_DIR'e göre düzelt).
   Hook fmt'i **otomatik** ayarlar: file-capable stack'te sadece staged dosyalar (eski dirt bloklamaz),
   scope edilemeyen stack'te (java/rust/dotnet) advisory + "CI zorlasın". Tool kurulu değilse atlar.
-  doc-sync default advisory (`STRICT_DOCS=1` ile blocking). `git config core.hooksPath .githooks` +
-  `git config commit.template .gitmessage` öner.
+  doc-sync default advisory (`git config vibe.strictdocs true` ile blocking — Faz 2'de sordun).
+  `git config core.hooksPath .githooks` + `git config commit.template .gitmessage` öner.
 - **settings.json `permissions.allow`**: profil `TEST`/`BUILD`/`FMT` + salt-okunur git (`status/diff/log/
   show/branch`). Mutasyon yapanları (`git add`, `git commit`) **dahil etme**.
 - **settings.json `permissions.deny`**: büyük üretilmiş/vendor asset'leri (lockfile değil — derlenmiş
@@ -210,6 +214,9 @@ dokunulmamış olanları sürüme taşır, elle düzenlenmişleri CONFLICT olara
 
 ### 2. UPDATE / ADD / MIGRATED — otomatik; sadece bildir
 - UPDATE: engine zaten regen etti. Hangileri değişti söyle, `git diff` öner.
+  - `.githooks/pre-commit` UPDATE edildiyse **ve** `git config --get --local vibe.strictdocs` boş
+    dönerse: Faz 2'deki AYNI soruyu sor — **"doc-sync'i zorlayıcı (blocking) yapayım mı?"** Evet ise
+    `git config vibe.strictdocs true` çalıştır.
 - ADD: `bash "$SKILL_DIR/scaffold.sh" init .` eksikleri düşürür (idempotent; var olanı ezmez).
 - MIGRATED: ne yapıldığını aktar.
 
