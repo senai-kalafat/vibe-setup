@@ -11,6 +11,28 @@ istersen `remove` komutu (dry-run varsayılan) var.
 
 Desteklenen: Go, Node/TS, Python, Java, Kotlin, Swift, Rust, Ruby, .NET, PHP, Elixir + boş repo.
 
+## Mimari (özet)
+
+Geliştirici (ya da bir AI agent) skill'i çağırır; **akıllı kat** repoyu okuyup içerik üretir, **deterministik
+motor** iskeleti/hook'ları düşürür ve sürüm driftini yönetir. Ürettiği her şey hedef reponun içine yazılır.
+
+```mermaid
+flowchart LR
+  U["Geliştirici + AI agent"] -->|/vibe-setup| VS
+
+  subgraph VS["vibe-setup"]
+    SK["SKILL.md — akıllı kat (LLM)"]
+    EN["scaffold.sh — deterministik motor"]
+    SK <--> EN
+  end
+
+  VS -->|"audit / init / upgrade / remove"| TR["Hedef repo<br/>CLAUDE.md · AGENTS.md · docs/<br/>git hooks · testler"]
+  VS -.->|"npm install -g"| CM["context-mode<br/>(zorunlu bağımlılık)"]
+  VS -.->|"git tag ile self-update"| GH["GitHub<br/>senai-kalafat/vibe-setup"]
+```
+
+Detaylı diagramlar ve akış: [docs/architecture/overview.md](docs/architecture/overview.md).
+
 ## Nasıl çalışır
 
 İş **iki kata** ayrılır — bu projenin merkezî tasarımı:
