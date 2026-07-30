@@ -53,5 +53,20 @@ printf 'eski notlar\n' > "$legacy/AGENT.md"
 out6="$(bash "$SCAFFOLD" audit "$legacy" 2>/dev/null)"
 printf '%s' "$out6" | grep -qi 'legacy AGENT.md' && ok "legacy AGENT.md → audit tespit satırı basıyor" || bad "legacy AGENT.md tespit satırı yok"
 
+# 7. README mimari diagramı — 3 durum: README yok (NA), README var ama mermaid yok (❌), mermaid var (✅)
+no_readme="$tmp/no-readme"; mkdir -p "$no_readme"
+out7="$(bash "$SCAFFOLD" audit "$no_readme" 2>/dev/null)"
+printf '%s' "$out7" | grep -qE '— +README mimari diagramı' && ok "README yok: diagram satırı NA" || bad "README yok: diagram satırı NA değil"
+
+no_diagram="$tmp/no-diagram"; mkdir -p "$no_diagram"
+echo "# proje" > "$no_diagram/README.md"
+out8="$(bash "$SCAFFOLD" audit "$no_diagram" 2>/dev/null)"
+printf '%s' "$out8" | grep -qE '❌ +README mimari diagramı' && ok "README var, diagram yok: ❌ basıyor" || bad "diagram yok ama ❌ basmadı"
+
+with_diagram="$tmp/with-diagram"; mkdir -p "$with_diagram"
+printf '# proje\n\n```mermaid\nflowchart TD\n  A --> B\n```\n' > "$with_diagram/README.md"
+out9="$(bash "$SCAFFOLD" audit "$with_diagram" 2>/dev/null)"
+printf '%s' "$out9" | grep -qE '✅ +README mimari diagramı' && ok "README diagram içeriyor: ✅ basıyor" || bad "diagram var ama ✅ basmadı"
+
 echo "audit_test: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]

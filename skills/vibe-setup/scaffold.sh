@@ -142,6 +142,10 @@ audit() {
   else row "$NO" "AGENTS.md" "init düşürür"; fi
   has_file llms.txt    && row "$OK" "llms.txt (ops)" || row "$NA" "llms.txt (ops)" "opsiyonel: dış LLM tüketicisi varsa"
   has_file README.md   && row "$OK" "README.md" || row "$NO" "README.md" "yok"
+  if ! has_file README.md; then row "$NA" "README mimari diagramı" "README.md yok"
+  elif grep -q '```mermaid' README.md; then row "$OK" "README mimari diagramı"
+  else row "$NO" "README mimari diagramı" "LLM: üst-seviye özet diagram ekle (dış bağlantılar + ne iş yaptığı) — docs/architecture/overview.md'ye detay linki ver"
+  fi
   echo "BİLGİ TABANI"
   has_file docs/README.md && row "$OK" "docs/ index" || row "$NO" "docs/README.md" "init düşürür"
   has_file docs/architecture/decisions/0000-template.md && row "$OK" "ADR template" || row "$NO" "ADR 0000-template" "init düşürür"
