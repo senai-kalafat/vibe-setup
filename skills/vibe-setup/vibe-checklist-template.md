@@ -42,7 +42,7 @@
 - [ ] Git hook (core.hooksPath) AI için DEĞİL **herkes** için zorlar: fmt + lint + doc-sync
 - [ ] Doc-sync veya kalite hook'u, repoda **tracked**
 - [ ] fmt scope edilemeyen stack'lerde (java/rust/dotnet) advisory; asıl enforcement CI'da
-- [ ] doc-sync default advisory; bilerek istenirse `STRICT_DOCS=1` ile blocking
+- [ ] doc-sync default advisory; bilerek istenirse `git config vibe.strictdocs true` ile blocking
 - [ ] Plugin/skill paylaşım kararı verilmiş (projeye sabit ya da bilerek user-only)
 - [ ] settings.json tracked, settings.local.json gitignore
 
