@@ -55,7 +55,7 @@ printf '%s' "$nout" | grep -qi 'sed:' && bad "node init 'sed:' hatası bastı" |
 [ -e "$node/.claude/settings.json" ]  && ok "node settings.json olustu" || bad "node settings.json yok (init yarıda?)"
 grep -qF 'js|ts|jsx|tsx' "$node/.githooks/pre-commit" 2>/dev/null && ok "SRC_RE pre-commit'e gömüldü" || bad "SRC_RE gömülmedi"
 bash -n "$node/.githooks/pre-commit" 2>/dev/null && ok "node pre-commit gecerli bash" || bad "node pre-commit syntax hatasi"
-grep -q '@FMT@\|@SRCRE@\|@STACK@\|@LINT@\|@FMTFILEOK@\|@VER@' "$node/.githooks/pre-commit" 2>/dev/null && bad "ikame edilmemis @marker@ kaldi" || ok "tum @marker@ ikame edildi"
+grep -q '@FMT@\|@SRCRE@\|@STACK@\|@LINT@\|@FMTFILEOK@\|@LINTFILEOK@\|@VER@' "$node/.githooks/pre-commit" 2>/dev/null && bad "ikame edilmemis @marker@ kaldi" || ok "tum @marker@ ikame edildi"
 
 # 6. created flag — yeni yazılan dosya true, önceden var olan (SKIP'lenen) dosya false
 pre="$tmp/pre-existing"; mkdir -p "$pre"

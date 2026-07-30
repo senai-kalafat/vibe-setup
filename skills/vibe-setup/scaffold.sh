@@ -18,7 +18,7 @@ set -euo pipefail
 
 # Şema versiyonu (tamsayı). Bir managed template VEYA migration değiştiğinde +1; artifact_changed_in'i de güncelle.
 # plugin.json semver'i ayrı (marketplace); bu sayı upgrade/migration anahtarıdır.
-VIBE_VERSION=6
+VIBE_VERSION=7
 
 APPLY=0
 ARGS=()
@@ -42,37 +42,40 @@ manifest_dir() {
     | head -1 | sed 's#/[^/]*$##; s#^$#.#'
 }
 
-# Echoes: STACK MODULE_DIR FMT LINT TEST BUILD SRC_RE TEST_FIND FMT_FILE_OK  (tab-separated; "-" = none)
+# Echoes: STACK MODULE_DIR FMT LINT TEST BUILD SRC_RE TEST_FIND FMT_FILE_OK LINT_FILE_OK  (tab-separated; "-" = none)
 # FMT_FILE_OK=1 → fmt accepts a file list, so the hook checks ONLY staged files (blocking).
 # FMT_FILE_OK=0 → fmt is whole-project only, so the hook runs it advisory (CI must enforce).
+# LINT_FILE_OK=1 → lint accepts a file list (e.g. shellcheck), so the hook passes staged source files;
+#                  with no staged source files the lint step is skipped entirely. Still ADVISORY.
+# LINT_FILE_OK=0 → lint runs whole-project bare (go vet ./..., ruff check ., cargo clippy, ...). ADVISORY.
 detect_profile() {
   local d
-  if   d="$(manifest_dir go.mod)";        [ -n "$d" ]; then printf 'go\t%s\tgofmt -l\tgo vet ./...\tgo test ./...\tgo build ./...\t\\.go$\t*_test.go\t1\n' "$d"
+  if   d="$(manifest_dir go.mod)";        [ -n "$d" ]; then printf 'go\t%s\tgofmt -l\tgo vet ./...\tgo test ./...\tgo build ./...\t\\.go$\t*_test.go\t1\t0\n' "$d"
   elif d="$(manifest_dir package.json)";  [ -n "$d" ]; then
     if [ -f "$d/biome.json" ] || [ -f "$d/biome.jsonc" ]; then
-      printf 'node\t%s\tnpx --no-install @biomejs/biome check\t-\tnpm test\tnpm run build\t\\.(js|ts|jsx|tsx)$\t*.test.*\t1\n' "$d"
+      printf 'node\t%s\tnpx --no-install @biomejs/biome check\t-\tnpm test\tnpm run build\t\\.(js|ts|jsx|tsx)$\t*.test.*\t1\t0\n' "$d"
     else
-      printf 'node\t%s\tnpx --no-install prettier --check\tnpx --no-install eslint .\tnpm test\tnpm run build\t\\.(js|ts|jsx|tsx)$\t*.test.*\t1\n' "$d"
+      printf 'node\t%s\tnpx --no-install prettier --check\tnpx --no-install eslint .\tnpm test\tnpm run build\t\\.(js|ts|jsx|tsx)$\t*.test.*\t1\t0\n' "$d"
     fi
-  elif d="$(manifest_dir pyproject.toml)";[ -n "$d" ]; then printf 'python\t%s\truff format --check\truff check .\tpytest\t-\t\\.py$\ttest_*.py\t1\n' "$d"
-  elif d="$(manifest_dir setup.py)";      [ -n "$d" ]; then printf 'python\t%s\truff format --check\truff check .\tpytest\t-\t\\.py$\ttest_*.py\t1\n' "$d"
-  elif d="$(manifest_dir requirements.txt)";[ -n "$d" ]; then printf 'python\t%s\truff format --check\truff check .\tpytest\t-\t\\.py$\ttest_*.py\t1\n' "$d"
-  elif d="$(manifest_dir pom.xml)";       [ -n "$d" ]; then printf 'java\t%s\tmvn spotless:check\t-\tmvn test\tmvn package\t\\.java$\t*Test.java\t0\n' "$d"
-  elif d="$(manifest_dir build.gradle.kts)"; [ -n "$d" ]; then printf 'kotlin\t%s\t./gradlew ktlintCheck\t-\t./gradlew test\t./gradlew build\t\\.(kt|kts)$\t*Test.kt\t0\n' "$d"
-  elif d="$(manifest_dir build.gradle)";  [ -n "$d" ]; then printf 'java\t%s\t./gradlew spotlessCheck\t-\t./gradlew test\t./gradlew build\t\\.java$\t*Test.java\t0\n' "$d"
-  elif d="$(manifest_dir Cargo.toml)";    [ -n "$d" ]; then printf 'rust\t%s\tcargo fmt --check\tcargo clippy\tcargo test\tcargo build\t\\.rs$\t*_test.rs\t0\n' "$d"
-  elif d="$(manifest_dir Gemfile)";       [ -n "$d" ]; then printf 'ruby\t%s\trubocop\trubocop\trspec\t-\t\\.rb$\t*_spec.rb\t1\n' "$d"
-  elif d="$(manifest_dir composer.json)"; [ -n "$d" ]; then printf 'php\t%s\tphp-cs-fixer fix --dry-run\tphpstan analyse\tphpunit\t-\t\\.php$\t*Test.php\t1\n' "$d"
-  elif d="$(manifest_dir Package.swift)"; [ -n "$d" ]; then printf 'swift\t%s\tswiftformat --lint\tswiftlint\tswift test\tswift build\t\\.swift$\t*Tests.swift\t1\n' "$d"
-  elif d="$(manifest_dir mix.exs)";       [ -n "$d" ]; then printf 'elixir\t%s\tmix format --check-formatted\tmix credo\tmix test\tmix compile\t\\.(ex|exs)$\t*_test.exs\t1\n' "$d"
-  elif find . -maxdepth 3 \( -name '*.csproj' -o -name '*.sln' \) -not -path '*/.*' 2>/dev/null | grep -q .; then printf 'dotnet\t.\tdotnet format --verify-no-changes\t-\tdotnet test\tdotnet build\t\\.cs$\t*Tests.cs\t0\n'
-  elif find . -maxdepth 3 -name '*.sh' -not -path '*/.*' 2>/dev/null | grep -q .; then printf 'shell\t.\tshfmt -d\tshellcheck\tbash tests/run.sh\t-\t\\.sh$\t*_test.sh\t1\n'
-  else printf 'unknown\t.\t-\t-\t-\t-\t-\t-\t0\n'
+  elif d="$(manifest_dir pyproject.toml)";[ -n "$d" ]; then printf 'python\t%s\truff format --check\truff check .\tpytest\t-\t\\.py$\ttest_*.py\t1\t0\n' "$d"
+  elif d="$(manifest_dir setup.py)";      [ -n "$d" ]; then printf 'python\t%s\truff format --check\truff check .\tpytest\t-\t\\.py$\ttest_*.py\t1\t0\n' "$d"
+  elif d="$(manifest_dir requirements.txt)";[ -n "$d" ]; then printf 'python\t%s\truff format --check\truff check .\tpytest\t-\t\\.py$\ttest_*.py\t1\t0\n' "$d"
+  elif d="$(manifest_dir pom.xml)";       [ -n "$d" ]; then printf 'java\t%s\tmvn spotless:check\t-\tmvn test\tmvn package\t\\.java$\t*Test.java\t0\t0\n' "$d"
+  elif d="$(manifest_dir build.gradle.kts)"; [ -n "$d" ]; then printf 'kotlin\t%s\t./gradlew ktlintCheck\t-\t./gradlew test\t./gradlew build\t\\.(kt|kts)$\t*Test.kt\t0\t0\n' "$d"
+  elif d="$(manifest_dir build.gradle)";  [ -n "$d" ]; then printf 'java\t%s\t./gradlew spotlessCheck\t-\t./gradlew test\t./gradlew build\t\\.java$\t*Test.java\t0\t0\n' "$d"
+  elif d="$(manifest_dir Cargo.toml)";    [ -n "$d" ]; then printf 'rust\t%s\tcargo fmt --check\tcargo clippy\tcargo test\tcargo build\t\\.rs$\t*_test.rs\t0\t0\n' "$d"
+  elif d="$(manifest_dir Gemfile)";       [ -n "$d" ]; then printf 'ruby\t%s\trubocop\trubocop\trspec\t-\t\\.rb$\t*_spec.rb\t1\t0\n' "$d"
+  elif d="$(manifest_dir composer.json)"; [ -n "$d" ]; then printf 'php\t%s\tphp-cs-fixer fix --dry-run\tphpstan analyse\tphpunit\t-\t\\.php$\t*Test.php\t1\t0\n' "$d"
+  elif d="$(manifest_dir Package.swift)"; [ -n "$d" ]; then printf 'swift\t%s\tswiftformat --lint\tswiftlint\tswift test\tswift build\t\\.swift$\t*Tests.swift\t1\t0\n' "$d"
+  elif d="$(manifest_dir mix.exs)";       [ -n "$d" ]; then printf 'elixir\t%s\tmix format --check-formatted\tmix credo\tmix test\tmix compile\t\\.(ex|exs)$\t*_test.exs\t1\t0\n' "$d"
+  elif find . -maxdepth 3 \( -name '*.csproj' -o -name '*.sln' \) -not -path '*/.*' 2>/dev/null | grep -q .; then printf 'dotnet\t.\tdotnet format --verify-no-changes\t-\tdotnet test\tdotnet build\t\\.cs$\t*Tests.cs\t0\t0\n'
+  elif find . -maxdepth 3 -name '*.sh' -not -path '*/.*' 2>/dev/null | grep -q .; then printf 'shell\t.\tshfmt -d\tshellcheck\tbash tests/run.sh\t-\t\\.sh$\t*_test.sh\t1\t1\n'
+  else printf 'unknown\t.\t-\t-\t-\t-\t-\t-\t0\t0\n'
   fi
 }
 
 PROFILE="$(detect_profile)"
-IFS=$'\t' read -r STACK MODULE_DIR FMT LINT TEST BUILD SRC_RE TEST_FIND FMT_FILE_OK <<<"$PROFILE"
+IFS=$'\t' read -r STACK MODULE_DIR FMT LINT TEST BUILD SRC_RE TEST_FIND FMT_FILE_OK LINT_FILE_OK <<<"$PROFILE"
 
 # ---------------------------------------------------------------- helpers
 has_file() { [ -e "$1" ]; }
@@ -102,7 +105,7 @@ extra_paths() {
 }
 # Her artifact en son hangi VIBE_VERSION'da değişti (stamp + manifest v + upgrade raporu için).
 artifact_changed_in() { case "$1" in
-  .githooks/pre-commit) echo 6 ;;   # v6: lint çıktısı sabit /tmp/vibe_lint yerine mktemp (symlink riski + paralel commit çakışması)
+  .githooks/pre-commit) echo 7 ;;   # v7: lint dosya-scope (LINT_FILE_OK) — dosya-odaklı linter'a staged kaynaklar geçilir
   .githooks/commit-msg) echo 3 ;;   # v3: ticket-key hard-coded → opsiyonel (git config vibe.ticketre; ayarsız = bloklamaz)
   .gitmessage)          echo 3 ;;   # v3: ticket-key opsiyonel ibaresi
   AGENTS.md)            echo 4 ;;   # v4: Gemini AGENTS.md okumaz iddiası düzeltildi; Codex/Kimi Code isimlendirildi
@@ -197,6 +200,8 @@ set -euo pipefail
 staged="$(git diff --cached --name-only --diff-filter=ACM || true)"
 [ -z "$staged" ] && exit 0
 fail=0
+# staged kaynak dosyaları — fmt ve lint aynı listeyi paylaşır (tek kaynak).
+staged_src="$(printf '%s\n' "$staged" | grep -E '@SRCRE@' || true)"
 
 # 1. fmt — tool kuruluysa çalışır; file-capable ise staged-scope & blocking, değilse repo-geneli & advisory.
 fmt_bin="$(printf '%s' "@FMT@" | awk '{print $1}')"
@@ -204,7 +209,6 @@ fmt_bin="$(printf '%s' "@FMT@" | awk '{print $1}')"
 if [ "@FMT@" != "-" ] && command -v "$fmt_bin" >/dev/null 2>&1; then
   # shellcheck disable=SC2050
   if [ "@FMTFILEOK@" = "1" ]; then
-    staged_src="$(printf '%s\n' "$staged" | grep -E '@SRCRE@' || true)"
     if [ -n "$staged_src" ]; then
       # shellcheck disable=SC2086
       if ! out="$(@FMT@ $staged_src 2>&1)"; then
@@ -220,13 +224,26 @@ if [ "@FMT@" != "-" ] && command -v "$fmt_bin" >/dev/null 2>&1; then
   fi
 fi
 
-# 2. lint (advisory) — tool kuruluysa
+# 2. lint (advisory — her iki modda da BLOKLAMAZ) — tool kuruluysa.
+# LINT_FILE_OK=1 → araç dosya listesi ister (ör. shellcheck): staged kaynak dosyaları geçilir,
+# staged kaynak yoksa adım tamamen atlanır (argümansız çağırıp usage hatası basmak yerine).
 lint_bin="$(printf '%s' "@LINT@" | awk '{print $1}')"
-# shellcheck disable=SC2050  # @LINT@ üretim anında sabitlenir — render sonrası sabit ifade normal
+# shellcheck disable=SC2050  # @LINT@/@LINTFILEOK@ üretim anında sabitlenir — render sonrası sabit ifade normal
 if [ "@LINT@" != "-" ] && command -v "$lint_bin" >/dev/null 2>&1; then
   lint_out="$(mktemp)"                       # sabit /tmp yolu YOK: çok-kullanıcılı makinede symlink riski + paralel commit çakışması
-  @LINT@ >"$lint_out" 2>&1 || true
-  [ -s "$lint_out" ] && { echo "ℹ lint (bloklamaz):" >&2; sed 's/^/  /' "$lint_out" >&2; }
+  lint_ran=0
+  # shellcheck disable=SC2050
+  if [ "@LINTFILEOK@" = "1" ]; then
+    if [ -n "$staged_src" ]; then
+      # shellcheck disable=SC2086
+      @LINT@ $staged_src >"$lint_out" 2>&1 || true
+      lint_ran=1
+    fi
+  else
+    @LINT@ >"$lint_out" 2>&1 || true
+    lint_ran=1
+  fi
+  [ "$lint_ran" = 1 ] && [ -s "$lint_out" ] && { echo "ℹ lint (bloklamaz):" >&2; sed 's/^/  /' "$lint_out" >&2; }
   rm -f "$lint_out"
 fi
 
@@ -248,6 +265,7 @@ EOF
   t="${t//@SRCRE@/$SRC_RE}"
   t="${t//@STACK@/$STACK}"
   t="${t//@FMTFILEOK@/$FMT_FILE_OK}"
+  t="${t//@LINTFILEOK@/$LINT_FILE_OK}"
   printf '%s\n' "$t"
 }
 
@@ -707,6 +725,6 @@ case "$CMD" in
   init-aider) init_aider ;;
   upgrade) upgrade ;;
   remove)  remove ;;
-  profile) printf 'STACK=%s\nMODULE_DIR=%s\nFMT=%s\nLINT=%s\nTEST=%s\nBUILD=%s\nSRC_RE=%s\nTEST_FIND=%s\nFMT_FILE_OK=%s\nVIBE_VERSION=%s\n' "$STACK" "$MODULE_DIR" "$FMT" "$LINT" "$TEST" "$BUILD" "$SRC_RE" "$TEST_FIND" "$FMT_FILE_OK" "$VIBE_VERSION" ;;
+  profile) printf 'STACK=%s\nMODULE_DIR=%s\nFMT=%s\nLINT=%s\nTEST=%s\nBUILD=%s\nSRC_RE=%s\nTEST_FIND=%s\nFMT_FILE_OK=%s\nLINT_FILE_OK=%s\nVIBE_VERSION=%s\n' "$STACK" "$MODULE_DIR" "$FMT" "$LINT" "$TEST" "$BUILD" "$SRC_RE" "$TEST_FIND" "$FMT_FILE_OK" "$LINT_FILE_OK" "$VIBE_VERSION" ;;
   *) echo "kullanım: scaffold.sh {audit|init|init-cursor|init-gemini|init-aider|upgrade|remove|profile} [DIR] [--apply]" >&2; exit 2 ;;
 esac

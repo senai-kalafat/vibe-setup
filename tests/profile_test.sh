@@ -42,5 +42,11 @@ mkdir -p "$tmp/rust" && : > "$tmp/rust/Cargo.toml"
 [ "$(field_of "$tmp/swift" FMT_FILE_OK)" = "1" ] && { echo "  ok: swift FMT_FILE_OK=1"; pass=$((pass+1)); } || { echo "  FAIL: swift FMT_FILE_OK"; fail=$((fail+1)); }
 [ "$(field_of "$tmp/ex" FMT_FILE_OK)" = "1" ]   && { echo "  ok: elixir FMT_FILE_OK=1"; pass=$((pass+1)); } || { echo "  FAIL: elixir FMT_FILE_OK"; fail=$((fail+1)); }
 
+# LINT_FILE_OK: sadece shell dosya-odakli (shellcheck dosya ister); digerleri argumansiz calisir
+mkdir -p "$tmp/sh" && : > "$tmp/sh/tool.sh"
+[ "$(field_of "$tmp/sh" LINT_FILE_OK)" = "1" ]   && { echo "  ok: shell LINT_FILE_OK=1"; pass=$((pass+1)); }   || { echo "  FAIL: shell LINT_FILE_OK"; fail=$((fail+1)); }
+[ "$(field_of "$tmp/go" LINT_FILE_OK)" = "0" ]   && { echo "  ok: go LINT_FILE_OK=0"; pass=$((pass+1)); }      || { echo "  FAIL: go LINT_FILE_OK"; fail=$((fail+1)); }
+[ "$(field_of "$tmp/rust" LINT_FILE_OK)" = "0" ] && { echo "  ok: rust LINT_FILE_OK=0"; pass=$((pass+1)); }    || { echo "  FAIL: rust LINT_FILE_OK"; fail=$((fail+1)); }
+
 echo "profile_test: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]
