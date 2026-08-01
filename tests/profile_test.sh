@@ -48,5 +48,8 @@ mkdir -p "$tmp/sh" && : > "$tmp/sh/tool.sh"
 [ "$(field_of "$tmp/go" LINT_FILE_OK)" = "0" ]   && { echo "  ok: go LINT_FILE_OK=0"; pass=$((pass+1)); }      || { echo "  FAIL: go LINT_FILE_OK"; fail=$((fail+1)); }
 [ "$(field_of "$tmp/rust" LINT_FILE_OK)" = "0" ] && { echo "  ok: rust LINT_FILE_OK=0"; pass=$((pass+1)); }    || { echo "  FAIL: rust LINT_FILE_OK"; fail=$((fail+1)); }
 
+# VIBE_VERSION: profile çıktısı şema sürümünü basar (11. satır)
+[ "$(field_of "$tmp/go" VIBE_VERSION)" = "8" ] && { echo "  ok: profile VIBE_VERSION=8"; pass=$((pass+1)); } || { echo "  FAIL: profile VIBE_VERSION — beklenen 8, gelen '$(field_of "$tmp/go" VIBE_VERSION)'"; fail=$((fail+1)); }
+
 echo "profile_test: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]

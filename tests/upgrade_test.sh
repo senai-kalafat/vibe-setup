@@ -19,9 +19,9 @@ set_msha() { # $1 manifest $2 path $3 newsha
 # A. init manifest doğru
 d="$(fresh A)"
 [ -f "$d/.vibe-setup.json" ] && ok "init manifest yazdı" || bad "manifest yok"
-grep -q '"vibeVersion": 7' "$d/.vibe-setup.json" && ok "vibeVersion=7" || bad "vibeVersion yok/yanlış"
+grep -q '"vibeVersion": 8' "$d/.vibe-setup.json" && ok "vibeVersion=8" || bad "vibeVersion yok/yanlış"
 grep -q '".githooks/pre-commit": { "v": 7' "$d/.vibe-setup.json" && ok "pre-commit v7 kayıtlı" || bad "pre-commit v kaydı yok"
-grep -q '"AGENTS.md": { "v": 4' "$d/.vibe-setup.json" && ok "AGENTS.md v4 kayıtlı" || bad "AGENTS.md v kaydı yok"
+grep -q '"AGENTS.md": { "v": 8' "$d/.vibe-setup.json" && ok "AGENTS.md v8 kayıtlı" || bad "AGENTS.md v kaydı yok"
 
 # B. fresh repo upgrade → drift yok (UPDATE/ADD/CONFLICT boş)
 d="$(fresh B)"
@@ -73,10 +73,10 @@ printf '%s\n' "$(field "$out" CONFLICT)" | grep -q 'pre-commit' && ok "legacy fa
 
 # H. eski manifest sürümü → upgrade sürümü yükseltir; git-repo-değil → v3 migration atlanır (probe-guard)
 d="$(fresh H)"
-awk '{ sub(/"vibeVersion": 7/, "\"vibeVersion\": 1"); print }' "$d/.vibe-setup.json" > "$d/.vibe-setup.json.t" && mv "$d/.vibe-setup.json.t" "$d/.vibe-setup.json"
+awk '{ sub(/"vibeVersion": 8/, "\"vibeVersion\": 1"); print }' "$d/.vibe-setup.json" > "$d/.vibe-setup.json.t" && mv "$d/.vibe-setup.json.t" "$d/.vibe-setup.json"
 out="$(bash "$SCAFFOLD" upgrade "$d" 2>/dev/null)"
 printf '%s' "$out" | grep -q 'applied=v1' && ok "eski uygulanan sürüm algılandı (v1)" || bad "applied=v1 basılmadı"
-grep -q '"vibeVersion": 7' "$d/.vibe-setup.json" && ok "manifest v7'ye yükseltildi" || bad "manifest sürümü yükselmedi"
+grep -q '"vibeVersion": 8' "$d/.vibe-setup.json" && ok "manifest v8'e yükseltildi" || bad "manifest sürümü yükselmedi"
 printf '%s\n' "$out" | grep -q '^MIGRATED=' && ok "MIGRATED satırı basıldı" || bad "MIGRATED satırı yok"
 [ -z "$(field "$out" MIGRATED)" ] && ok "git-repo-değil → migration atlandı (MIGRATED boş)" || bad "beklenmedik MIGRATED: '$(field "$out" MIGRATED)'"
 
@@ -84,7 +84,7 @@ printf '%s\n' "$out" | grep -q '^MIGRATED=' && ok "MIGRATED satırı basıldı" 
 if command -v git >/dev/null 2>&1; then
   d="$tmp/I"; mkdir -p "$d"; git -C "$d" init -q
   echo '{}' > "$d/package.json"; bash "$SCAFFOLD" init "$d" >/dev/null 2>&1
-  awk '{ sub(/"vibeVersion": 7/, "\"vibeVersion\": 1"); print }' "$d/.vibe-setup.json" > "$d/.vibe-setup.json.t" && mv "$d/.vibe-setup.json.t" "$d/.vibe-setup.json"
+  awk '{ sub(/"vibeVersion": 8/, "\"vibeVersion\": 1"); print }' "$d/.vibe-setup.json" > "$d/.vibe-setup.json.t" && mv "$d/.vibe-setup.json.t" "$d/.vibe-setup.json"
   out="$(bash "$SCAFFOLD" upgrade "$d" 2>/dev/null)"
   printf '%s' "$(field "$out" MIGRATED)" | grep -q 'ticketre' && ok "v3 migration: MIGRATED ticketre bildirir" || bad "MIGRATED ticketre yok: '$(field "$out" MIGRATED)'"
   [ "$(git -C "$d" config --get vibe.ticketre)" = '^[A-Z]{3}-[0-9]{1,4} ' ] && ok "vibe.ticketre eski desene sabitlendi" || bad "vibe.ticketre set edilmedi"
@@ -106,11 +106,11 @@ grep -q 'KULLANICI OZEL SATIR' "$d/.githooks/pre-commit" && ok "J: kullanici edi
 
 # K. REGRESYON: init-cursor/init-gemini eski vibeVersion'i bozmaz (UPDATE_AVAILABLE sinyali korunur)
 d="$(fresh K)"
-awk '{ sub(/"vibeVersion": 7/, "\"vibeVersion\": 2"); print }' "$d/.vibe-setup.json" > "$d/.vibe-setup.json.t" && mv "$d/.vibe-setup.json.t" "$d/.vibe-setup.json"
+awk '{ sub(/"vibeVersion": 8/, "\"vibeVersion\": 2"); print }' "$d/.vibe-setup.json" > "$d/.vibe-setup.json.t" && mv "$d/.vibe-setup.json.t" "$d/.vibe-setup.json"
 bash "$SCAFFOLD" init-cursor "$d" >/dev/null 2>&1
 grep -q '"vibeVersion": 2' "$d/.vibe-setup.json" && ok "K: init-cursor eski vibeVersion'i korudu" || bad "K: init-cursor vibeVersion'i yanlislikla guncelledi"
 out3="$(bash "$SCAFFOLD" audit "$d" 2>/dev/null)"
-printf '%s' "$out3" | grep -q 'UPDATE_AVAILABLE=v2->v7' && ok "K: audit hala UPDATE_AVAILABLE basiyor (sinyal kaybolmadi)" || bad "K: UPDATE_AVAILABLE sinyali kayboldu"
+printf '%s' "$out3" | grep -q 'UPDATE_AVAILABLE=v2->v8' && ok "K: audit hala UPDATE_AVAILABLE basiyor (sinyal kaybolmadi)" || bad "K: UPDATE_AVAILABLE sinyali kayboldu"
 
 # L. REGRESYON: migrate_legacy_agent_md ile gelen AGENTS.md (created:false) sha eslesse bile
 #    upgrade tarafindan sablonla EZILMEMELI — provenance "vibe-setup uretti" demiyor, sha-eslesmesi
@@ -118,10 +118,25 @@ printf '%s' "$out3" | grep -q 'UPDATE_AVAILABLE=v2->v7' && ok "K: audit hala UPD
 d="$tmp/L"; mkdir -p "$d"
 printf '# Benim eski agent notlarim\nBu icerik onemli, kaybolmamali.\n' > "$d/AGENT.md"
 bash "$SCAFFOLD" init "$d" >/dev/null 2>&1
-grep -q '"AGENTS.md": { "v": 4, "sha": "[0-9]*", "created": false' "$d/.vibe-setup.json" && ok "L: migrate sonrasi AGENTS.md created:false" || bad "L: migrate sonrasi created:false degil"
+grep -q '"AGENTS.md": { "v": 8, "sha": "[0-9]*", "created": false' "$d/.vibe-setup.json" && ok "L: migrate sonrasi AGENTS.md created:false" || bad "L: migrate sonrasi created:false degil"
 out="$(bash "$SCAFFOLD" upgrade "$d" 2>/dev/null)"
 [ "$(field "$out" CONFLICT)" = "AGENTS.md" ] && ok "L: migrasyonla gelen AGENTS.md upgrade'de CONFLICT (UPDATE degil)" || bad "L: CONFLICT beklenirken: U='$(field "$out" UPDATE)' C='$(field "$out" CONFLICT)'"
 grep -q 'Benim eski agent notlarim' "$d/AGENTS.md" && ok "L: icerik upgrade'de de korundu (sablonla EZILMEDI)" || bad "L: upgrade migrasyon icerigini ezdi — VERI KAYBI"
+
+# M. AGENTS.md v8 geçişi — dokunulmamış eski içerik UPDATE, elle düzenlenmiş CONFLICT
+d="$(fresh M1)"
+printf '<!-- vibe-setup:v4 (managed) -->\n# Agent Guide\n\nEski icerik.\n' > "$d/AGENTS.md"
+set_msha "$d/.vibe-setup.json" "AGENTS.md" "$(shaf "$d/AGENTS.md")"
+out="$(bash "$SCAFFOLD" upgrade "$d" 2>/dev/null)"
+printf '%s\n' "$(field "$out" UPDATE)" | grep -q 'AGENTS.md' && ok "M: dokunulmamış eski AGENTS.md → UPDATE" || bad "M: UPDATE beklenirken: '$(field "$out" UPDATE)'"
+grep -q 'caveman modu' "$d/AGENTS.md" && ok "M: regen caveman satırını getirdi" || bad "M: regen'de caveman satırı yok"
+grep -q 'vibe-setup:v8' "$d/AGENTS.md" && ok "M: regen stamp v8" || bad "M: regen stamp v8 değil"
+
+d="$(fresh M2)"
+printf '\n<!-- KULLANICI OZEL SATIR -->\n' >> "$d/AGENTS.md"
+out="$(bash "$SCAFFOLD" upgrade "$d" 2>/dev/null)"
+printf '%s\n' "$(field "$out" CONFLICT)" | grep -q 'AGENTS.md' && ok "M: elle düzenlenmiş AGENTS.md → CONFLICT" || bad "M: CONFLICT beklenirken: '$(field "$out" CONFLICT)'"
+grep -q 'KULLANICI OZEL SATIR' "$d/AGENTS.md" && ok "M: kullanıcı edit'i korundu" || bad "M: kullanıcı edit'i ezildi!"
 
 echo "upgrade_test: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]

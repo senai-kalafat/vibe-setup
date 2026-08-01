@@ -18,7 +18,7 @@ set -euo pipefail
 
 # Şema versiyonu (tamsayı). Bir managed template VEYA migration değiştiğinde +1; artifact_changed_in'i de güncelle.
 # plugin.json semver'i ayrı (marketplace); bu sayı upgrade/migration anahtarıdır.
-VIBE_VERSION=7
+VIBE_VERSION=8
 
 APPLY=0
 ARGS=()
@@ -108,7 +108,7 @@ artifact_changed_in() { case "$1" in
   .githooks/pre-commit) echo 7 ;;   # v7: lint dosya-scope (LINT_FILE_OK) — dosya-odaklı linter'a staged kaynaklar geçilir
   .githooks/commit-msg) echo 3 ;;   # v3: ticket-key hard-coded → opsiyonel (git config vibe.ticketre; ayarsız = bloklamaz)
   .gitmessage)          echo 3 ;;   # v3: ticket-key opsiyonel ibaresi
-  AGENTS.md)            echo 4 ;;   # v4: Gemini AGENTS.md okumaz iddiası düzeltildi; Codex/Kimi Code isimlendirildi
+  AGENTS.md)            echo 8 ;;   # v8: caveman aktivasyon satırı (v4: Gemini AGENTS.md okumaz iddiası düzeltilmişti)
   *) echo 1 ;;
 esac ; }
 # synced = engine sürdürür (template drift → update/conflict). seed = bir kez düşer, sonra kullanıcı sahibi (drift normal).
@@ -281,6 +281,8 @@ Bu projenin tek doğruluk kaynağı **CLAUDE.md**'dir.
   [CLAUDE.md](CLAUDE.md)'ye bakın.
 - **Kendi context dosyası olan araçlar** ayrı pointer kullanır: Cursor → `.cursor/rules/`,
   Gemini CLI → `GEMINI.md` (ikisi de CLAUDE.md'ye yönlendirir/import eder).
+- **Çıktı modu:** bu repoda caveman modu (seviye `full`) zorunludur — aktif değilse `/caveman full`
+  çalıştır. Kod, commit mesajı ve PR metni normal yazılır.
 
 Ek doküman: [docs/](docs/).
 EOF

@@ -61,7 +61,7 @@ grep -q '@FMT@\|@SRCRE@\|@STACK@\|@LINT@\|@FMTFILEOK@\|@LINTFILEOK@\|@VER@' "$no
 pre="$tmp/pre-existing"; mkdir -p "$pre"
 echo '# zaten vardı' > "$pre/.gitmessage"
 bash "$SCAFFOLD" init "$pre" >/dev/null 2>&1
-grep -q '"AGENTS.md": { "v": 4, "sha": "[0-9]*", "created": true' "$pre/.vibe-setup.json" && ok "yeni yazilan AGENTS.md created:true" || bad "AGENTS.md created:true degil"
+grep -q '"AGENTS.md": { "v": 8, "sha": "[0-9]*", "created": true' "$pre/.vibe-setup.json" && ok "yeni yazilan AGENTS.md created:true" || bad "AGENTS.md created:true degil"
 grep -q '".gitmessage": { "v": 3, "sha": "[0-9]*", "created": false' "$pre/.vibe-setup.json" && ok "onceden var olan .gitmessage created:false" || bad ".gitmessage created:false degil"
 
 # 7. gitignoreLine — init'in .gitignore'a eklediği satır manifestte kayıtlı, upgrade'de de korunur
@@ -81,6 +81,11 @@ grep -q 'gitignoreLine' "$gi2/.vibe-setup.json" && bad "onceden var olan satir y
 gi3="$tmp/no-gitignore"; mkdir -p "$gi3"
 bash "$SCAFFOLD" init "$gi3" >/dev/null 2>&1
 grep -q 'gitignoreLine' "$gi3/.vibe-setup.json" && bad ".gitignore yokken gitignoreLine basildi" || ok ".gitignore yokken gitignoreLine basilmadi"
+
+# 10. AGENTS.md caveman aktivasyon satırı (v8) — template'te olmalı, stamp v8
+grep -q 'caveman modu' "$work/AGENTS.md" && ok "AGENTS.md caveman satiri icerir" || bad "AGENTS.md caveman satiri yok"
+grep -q '/caveman full' "$work/AGENTS.md" && ok "AGENTS.md /caveman full komutu icerir" || bad "/caveman full komutu yok"
+grep -q 'vibe-setup:v8' "$work/AGENTS.md" && ok "AGENTS.md stamp v8" || bad "AGENTS.md stamp v8 degil"
 
 echo "init_test: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]
