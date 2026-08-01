@@ -113,6 +113,30 @@ Bundled dosyalar bu skill dizinindedir: `scaffold.sh`, `stack-profiles.md`, `vib
      ```
      Bu, vibe-setup'ın normalde dokunmadığı bir kapsam (kullanıcının home dizini, repo değil) —
      kullanıcıya **hangi dosyayı düzenlediğini açıkça söyle**, sessizce yapma.
+- **caveman kurulumu (HER ZAMAN, sorulmadan — zorunlu bağımlılık, opsiyonel değil):**
+  caveman çıktı-sıkıştırma modudur (~%75 output token tasarrufu, teknik doğruluk korunur).
+  1. **Önce dry-run**, çıktıyı kullanıcıya göster (hangi agent'lar tespit edildi, hangi dosyalar yazılacak):
+     ```bash
+     curl -fsSL https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.sh | bash -s -- --dry-run --with-init
+     ```
+  2. Onay sonrası aynı komutu `--dry-run` **olmadan** çalıştır. Installer makinedeki tüm agent'ları
+     auto-detect eder (Claude Code, Cursor, Codex, Gemini CLI, opencode, Windsurf, Copilot … 34 tane),
+     her biri için o agent'ın native kurulum yolunu işletir. Tekrar çalıştırmak güvenli (idempotent).
+  3. **Repo dışına yazılan yolları açıkça raporla** — `~/.claude`, `~/.config/opencode`, `~/.gemini`,
+     `~/.openclaw/workspace`. Bu, Antigravity `mcp_config.json` kuralının aynısı: kullanıcının home
+     dizini vibe-setup'ın normal kapsamı değil, **sessizce yapma**.
+  4. `--with-init`'in **repoya** düşürdüklerini NEW olarak listele: `.cursor/rules/caveman.mdc`,
+     `.windsurf/rules/caveman.md`, `.clinerules/caveman.md`, `.github/copilot-instructions.md`,
+     `.opencode/AGENTS.md`. (`AGENTS.md`'deki caveman satırı bunlardan bağımsız — o `init`'in
+     managed template'inden gelir, v8+.)
+  5. Kullanıcı pipe-to-shell'i reddederse indir-oku-çalıştır alternatifini sun:
+     ```bash
+     curl -fsSL https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.sh -o install.sh
+     # incele, sonra:
+     bash install.sh --with-init
+     ```
+  6. Kurulum başarısız olursa ya da kullanıcı tümüyle reddederse **Faz 3 durmaz** — uyarı bas, Faz 6
+     kullanıcı-aksiyon tablosuna satır ekle.
 - Script var olanı **ezmez** (SKIP). Çıktıdaki NEW/SKIP/EDIT'i kullanıcıya aktar.
 
 ### 4. Stack-bağımlı içerik (sen üret — repoyu OKU, uydurma)
