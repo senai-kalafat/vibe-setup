@@ -143,10 +143,14 @@ Bundled dosyalar bu skill dizinindedir: `scaffold.sh`, `stack-profiles.md`, `vib
 Onaylanan her madde için:
 - **CLAUDE.md**: modül kökü kuralı, komutlar (profilden), mimari özet, **Gotchas** (koddan çıkarılması zor
   tuzaklar — gerçek koddan çıkar), git workflow. İşaretçi tarzı: docs'a yönlendir, içerik dökme.
-  Gotchas'a şunu da ekle: **subagent/alt-görev başlatan bir akış varsa, o subagent'lara da context-mode
-  kullanım talimatı açıkça verilmeli** — subagent taze context alır, parent'ın context-mode kuralını
-  miras almaz (Faz 3 context-mode'u zaten zorunlu kurdu; bu, o kurulumun subagent'lara da işlemesini
-  sağlayan tribal bilgi).
+  Ayrıca CLAUDE.md'ye **çıktı modu kuralı** yaz: bu repoda caveman modu (seviye `full`) zorunludur —
+  aktif değilse `/caveman full` çalıştır; kod, commit mesajı ve PR metni normal yazılır. Bu kural
+  hook'suz agent'lar için (Codex, Warp, Kilo Code, Roo Code, goose, Devin…) zorlamanın **tek**
+  dayanağıdır — onlarda kurulum otomatik aktive olmaz.
+  Gotchas'a şunu da ekle: **subagent/alt-görev başlatan bir akış varsa, o subagent'lara hem context-mode
+  hem caveman kullanım talimatı açıkça verilmeli** — subagent taze context alır, parent'ın context-mode
+  ve caveman kurallarını miras almaz (Faz 3 ikisini de zorunlu kurdu; bu, o kurulumun subagent'lara da
+  işlemesini sağlayan tribal bilgi).
 - **docs**: iskeletteki `<TODO>`'ları gerçek içerikle değiştir (kod haritası, conventions).
 - **README mimari diagramı (zorunlu deliverable):** README.md'nin başına (girişten hemen sonra) tek bir
   mermaid diagram + 2-3 cümle özet ekle — proje tek kutu, çevresinde **dış bağlantılar** (DB, harici
@@ -202,6 +206,7 @@ Onaylanan her madde için:
   | .gitmessage | `<TICKET-KEY>` formatını projeye uyarla |
   | .claude/settings.json | plugin enable / deny yolları onayı (gerekirse) |
   | Codex CLI / Gemini CLI (Antigravity dışı) / Kimi Code | context-mode MCP kaydı (opsiyonel — zorunlu değil) |
+  | caveman (kurulum reddedildi / agent tespit edilemedi) | tek-agent kurulum komutu — snippet aşağıda |
   | README mimari diagramı | bilinçli atlandıysa: neden (proje uygun değil) burada gerekçelendirilir |
   | … | (sadece gerçekten eksik/insan-gerektiren satırlar) |
 
@@ -225,6 +230,11 @@ Onaylanan her madde için:
       ```json
       "mcpServers": { "context-mode": { "command": "context-mode" } }
       ```
+  - **caveman tek-agent kurulumu** (auto-detect kaçırdıysa ya da kurulum reddedildiyse):
+    ```bash
+    npx skills add JuliusBrussee/caveman -a <agent-id>   # cursor | codex | windsurf | cline | kilo | roo | warp | goose | …
+    ```
+    Rule dosyası düşmeyen agent'larda caveman **session başına** `/caveman full` ile açılır.
 
 - **Token raporu:** süreç maliyetli değilse kullanıcıya **`/cost`** çalıştırmasını öner (Claude Code'un
   built-in kesin token/maliyet komutu). Skill kendi token sayamaz — uydurma sayı verme; `/cost`'a yönlendir.
@@ -310,6 +320,15 @@ onaylananlar için `git config --local --unset <key>` çalıştır — hepsini b
   gözden geçirilmeli — bunlara hiç dokunulmadı.
 - `vibe-remove-report.md`'nin repo kökünde kalıcı kayıt olarak durduğunu söyle (silinmez, bu işlemin
   tek receipt'i).
+- **caveman kapsam dışı** — `vibe-remove` onu kaldırmaz (context-mode gibi). Kullanıcı isterse:
+  ```bash
+  npx -y github:JuliusBrussee/caveman -- --uninstall   # hook'lar, plugin, extension, opencode plugin
+  npx skills remove caveman                            # `npx skills add` ile kurulanlar (ayrı CLI)
+  ```
+  Bu iki komut da `--with-init`'in düşürdüğü repo-içi rule dosyalarını **silmez**
+  (`.cursor/rules/`, `.windsurf/rules/`, `.clinerules/`, `.github/copilot-instructions.md`,
+  `.opencode/AGENTS.md`) — elle silinir. `AGENTS.md`'deki caveman satırı ise vibe-setup'ın managed
+  template'inin parçası; `remove` onu zaten kendi kuralına göre ele alır.
 
 ## İlkeler
 - **Önce onay**, sonra üret. Toplu dosya bombardımanı yok.
