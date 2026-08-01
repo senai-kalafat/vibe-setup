@@ -82,6 +82,12 @@ Detay: [docs/](docs/).
   Subagent dispatch eden bir akış varsa (bu repoda: subagent-driven-development), her dispatch
   prompt'una context-mode kullanım talimatı **açıkça** eklenmeli — subagent taze context alır, parent
   session'ın context-mode kurallarını miras almaz.
+- **caveman zorunlu bağımlılık** (v8+): SKILL.md Faz 3 her çalıştırmada sorulmadan kurar
+  (`install.sh --with-init` → tüm agent'lar auto-detect + repo-içi rule dosyaları). Seviye `full`.
+  `AGENTS.md` template'inde aktivasyon satırı var (v8 — bu yüzden `VIBE_VERSION` 7→8 bump'landı);
+  hook'suz agent'larda (Codex, Warp, Kilo, Roo, goose…) zorlamanın tek dayanağı CLAUDE.md/AGENTS.md
+  prose'u. caveman `managed_paths`'e GİRMEZ, `vibe-remove` onu kaldırmaz. Subagent dispatch eden
+  akışlarda context-mode gibi caveman talimatı da her prompt'a açıkça eklenmeli.
 - **Paket versiyonu ≠ `VIBE_VERSION`.** `.claude-plugin/plugin.json` / `marketplace.json` /
   `.cursor-plugin/plugin.json`'daki `"version"` bu PLUGIN'in kendi sürümü — `scripts/version-sync.sh`
   ile senkron tutulur, `plugin.json` tek kaynak. `scaffold.sh`'taki `VIBE_VERSION` TAMAMEN AYRI bir
