@@ -52,23 +52,30 @@ Bundled dosyalar bu skill dizinindedir: `scaffold.sh`, `stack-profiles.md`, `vib
 ### 2. Rapor + onay (+ hedef araçlar)
 - Audit tablosunu kullanıcıya göster. Eksikleri iki grupta özetle:
   **agnostik** (script düşürür) ve **stack-bağımlı** (sen dolduracaksın).
-- **Hedef araç sorusu:** Claude varsayılan. AGENTS.md geniş bir ekosistemi zaten kapsar (Codex, Kimi
-  Code, Zed, Warp, VS Code, Devin, Amp, RooCode, Kilo Code, GitHub Copilot coding agent, Windsurf,
-  Augment Code, goose, opencode, Junie, Phoenix, Semgrep, Ona, Factory, Jules) — bunların hiçbiri ekstra
-  dosya istemez, hiçbir şey yapma. Kullanıcıya sor: **"Cursor ve/veya Gemini CLI ve/veya Aider için ayrı
-  context dosyası ister misin?"** Evet ise Faz 3'te ilgili `init-cursor` / `init-gemini` / `init-aider`'i
-  çalıştır.
-- **Ticket-key sorusu (zorunlu SOR, varsayma):** commit mesajında ticket-key zorlansın mı?
-  Varsayılan **zorlamasız** (hook hiçbir şeyi bloklamaz). Kullanıcı isterse formatı da sor —
-  standart `ABC-1234` mi, özel regex mi? Cevaba göre Faz 3 sonrasında:
-  `git config vibe.ticketre '^[A-Z]{3}-[0-9]{1,4} '` (ya da kullanıcının regex'i). İstemezse hiçbir şey yapma.
-- **doc-sync sorusu (zorunlu SOR, varsayma):** "doc-sync'i zorlayıcı (blocking) yapayım mı?" — kaynak
-  değişip doküman değişmezse commit'i engellesin mi? Varsayılan **öneri EVET** (ticket-key'in aksine —
-  ama yine de sorulur, kullanıcı hayır diyebilir). Evet ise Faz 3 sonrasında: `git config vibe.strictdocs
-  true` çalıştır. Hayır ise hiçbir şey yapma (hook advisory kalır).
-- **Hangi maddeleri kuralım?** diye sor. Kullanıcı seçmeden dosya üretme.
-  Tehlikeli/dışa-dönük olanları (plugin enable, harici repo, izin genişletme) ayrıca işaretle —
-  bunlar açık onay ister, güvenlik sınıflandırıcısı da bloklayabilir.
+- **Kurulacaklar listesini de göster** (Faz 3'te ne düşeceği): agnostik iskeletler + **context-mode**
+  (`npm install -g` + JSON-merge) + **caveman** (`install.sh --with-init`). caveman'in repo DIŞINA da
+  yazdığını (`~/.claude`, `~/.config/opencode`, `~/.gemini`, `~/.openclaw/workspace`) burada açıkça yaz —
+  onay bilinçli olsun.
+
+- **Sonra TEK `AskUserQuestion` çağrısı — 4 soru birlikte.** Bunları ayrı ayrı SORMA; geliştiriciyi
+  4 round-trip bekletmek bu skill'in en büyük sürtünmesiydi. Sorular:
+  1. **Ayrı context dosyası?** (multiSelect: Cursor / Gemini CLI / Aider / Hiçbiri). Claude varsayılan
+     ve AGENTS.md geniş bir ekosistemi zaten kapsar (Codex, Kimi Code, Zed, Warp, VS Code, Devin, Amp,
+     RooCode, Kilo Code, GitHub Copilot coding agent, Windsurf, Augment Code, goose, opencode, Junie,
+     Phoenix, Semgrep, Ona, Factory, Jules) — bunların hiçbiri ekstra dosya istemez. Seçilenler için
+     Faz 3'te `init-cursor` / `init-gemini` / `init-aider` çalışır.
+  2. **Commit'te ticket-key zorlansın mı?** (Hayır — varsayılan / `ABC-1234` / özel regex). Evet ise
+     Faz 3 sonrasında `git config vibe.ticketre '^[A-Z]{3}-[0-9]{1,4} '` (ya da kullanıcının regex'i).
+     Hayır ise hiçbir şey yapma — hook bloklamaz. **Formatı ayrı bir soru olarak sorma**, şıkların
+     içine göm.
+  3. **doc-sync blocking olsun mu?** (Evet — önerilen / Hayır). Kaynak değişip doküman değişmezse
+     commit engellensin mi? Evet ise Faz 3 sonrasında `git config vibe.strictdocs true`. Hayır ise
+     hook advisory kalır.
+  4. **Kurulum onayı** (Hepsi / Sadece agnostik / Seçmeli). Bu, dosya üretiminin kapısı — onaysız
+     üretme. Şık açıklamalarında **tehlikeli/dışa-dönük** olanları açıkça yaz (plugin enable, harici
+     repo'dan `install.sh` çalıştırma, home dizinine yazma, izin genişletme); güvenlik sınıflandırıcısı
+     bunları ayrıca bloklayabilir. "Seçmeli" derse — ve **yalnızca o zaman** — hangi maddeler diye tek
+     ek soru sor.
 
 ### 3. Agnostik iskeletler
 - `bash "$SKILL_DIR/scaffold.sh" init .` → AGENTS.md, docs/ + ADR template, .gitmessage,
@@ -115,11 +122,13 @@ Bundled dosyalar bu skill dizinindedir: `scaffold.sh`, `stack-profiles.md`, `vib
      kullanıcıya **hangi dosyayı düzenlediğini açıkça söyle**, sessizce yapma.
 - **caveman kurulumu (HER ZAMAN, sorulmadan — zorunlu bağımlılık, opsiyonel değil):**
   caveman çıktı-sıkıştırma modudur (~%75 output token tasarrufu, teknik doğruluk korunur).
-  1. **Önce dry-run**, çıktıyı kullanıcıya göster (hangi agent'lar tespit edildi, hangi dosyalar yazılacak):
+  Kurulum Faz 2'nin 4. sorusunda zaten onaylandı — **burada tekrar onay isteme.**
+  1. Dry-run çalıştır, çıktıyı **bilgi olarak** bas (hangi agent'lar tespit edildi, ne yazılacak) —
+     durup cevap bekleme:
      ```bash
      curl -fsSL https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.sh | bash -s -- --dry-run --with-init
      ```
-  2. Onay sonrası aynı komutu `--dry-run` **olmadan** çalıştır. Installer makinedeki tüm agent'ları
+  2. Hemen ardından aynı komutu `--dry-run` **olmadan** çalıştır. Installer makinedeki tüm agent'ları
      auto-detect eder (Claude Code, Cursor, Codex, Gemini CLI, opencode, Windsurf, Copilot … 34 tane),
      her biri için o agent'ın native kurulum yolunu işletir. Tekrar çalıştırmak güvenli (idempotent).
   3. **Repo dışına yazılan yolları açıkça raporla** — `~/.claude`, `~/.config/opencode`, `~/.gemini`,
@@ -129,13 +138,14 @@ Bundled dosyalar bu skill dizinindedir: `scaffold.sh`, `stack-profiles.md`, `vib
      `.windsurf/rules/caveman.md`, `.clinerules/caveman.md`, `.github/copilot-instructions.md`,
      `.opencode/AGENTS.md`. (`AGENTS.md`'deki caveman satırı bunlardan bağımsız — o `init`'in
      managed template'inden gelir, v8+.)
-  5. Kullanıcı pipe-to-shell'i reddederse indir-oku-çalıştır alternatifini sun:
+  5. Kullanıcı Faz 2'de "Sadece agnostik" dediyse ya da pipe-to-shell'e itiraz ederse, ısrar etme —
+     indir-oku-çalıştır alternatifini bilgi olarak bırak:
      ```bash
      curl -fsSL https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.sh -o install.sh
      # incele, sonra:
      bash install.sh --with-init
      ```
-  6. Kurulum başarısız olursa ya da kullanıcı tümüyle reddederse **Faz 3 durmaz** — uyarı bas, Faz 6
+  6. Kurulum başarısız olursa ya da atlandıysa **Faz 3 durmaz** — uyarı bas, Faz 6
      kullanıcı-aksiyon tablosuna satır ekle.
 - Script var olanı **ezmez** (SKIP). Çıktıdaki NEW/SKIP/EDIT'i kullanıcıya aktar.
 
@@ -171,12 +181,14 @@ Onaylanan her madde için:
 - **settings.json `permissions.allow`**: profil `TEST`/`BUILD`/`FMT` + salt-okunur git (`status/diff/log/
   show/branch`). Mutasyon yapanları (`git add`, `git commit`) **dahil etme**.
 - **settings.json `permissions.deny`**: büyük üretilmiş/vendor asset'leri (lockfile değil — derlenmiş
-  bundle, swagger, dist/, generated). `Read(<path>)` olarak ekle. Önce kullanıcıya doğrula.
-- **Plugin/MCP paylaşımı** (istenirse): `extraKnownMarketplaces` + `enabledPlugins` (ya da bare server için
-  tracked `.mcp.json`). Harici repo → açık onay; classifier bloklarsa kullanıcıya elle ekletecek snippet ver.
+  bundle, swagger, dist/, generated). `Read(<path>)` olarak ekle. **Sorma — ekle ve Faz 6'da hangi
+  yolları eklediğini raporla** (geri alması tek satır silmek; blocking soru etmeye değmez).
+- **Plugin/MCP paylaşımı**: `extraKnownMarketplaces` + `enabledPlugins` (ya da bare server için tracked
+  `.mcp.json`). Harici repo → açık onay; classifier bloklarsa kullanıcıya elle ekletecek snippet ver.
   - **Sadece projeye-özgü MCP'yi repoya sabitle** — bu projenin DB'si, iç API doküman MCP'si, Jira board'u
-    gibi ekibin ortak kullandığı, domaine bağlı sunucular. Kullanıcıya **"ekibe sabitlenecek projeye-özgü
-    MCP var mı?"** diye sor; saydığını pin'le. İki ürünü preselect etme.
+    gibi ekibin ortak kullandığı, domaine bağlı sunucular. **Kanıt yoksa SORMA:** repoda zaten `.mcp.json`
+    ya da bir MCP izi varsa onu pin'le; yoksa soru sorma, Faz 6 tablosuna "ekibe sabitlenecek projeye-özgü
+    MCP varsa ekle" satırı koy. İki ürünü preselect etme.
 
 ### 5. Doğrula
 - Üretilen her şeyi çalıştırarak doğrula: test (`TEST`), fmt (`FMT`), build (`BUILD`), hook kuru-çalıştırma.
@@ -204,7 +216,8 @@ Onaylanan her madde için:
   | CLAUDE.md | `<TODO>` gotchas'ı tribal bilgiyle doğrula |
   | llms.txt / docs | `<TODO>` placeholder'ları doldur |
   | .gitmessage | `<TICKET-KEY>` formatını projeye uyarla |
-  | .claude/settings.json | plugin enable / deny yolları onayı (gerekirse) |
+  | .claude/settings.json | eklenen `permissions.deny` yollarını gözden geçir (Faz 4 sormadan ekledi) |
+  | .mcp.json / settings.json | ekibe sabitlenecek projeye-özgü MCP varsa ekle (kanıt yoktu, sorulmadı) |
   | Codex CLI / Gemini CLI (Antigravity dışı) / Kimi Code | context-mode MCP kaydı (opsiyonel — zorunlu değil) |
   | caveman (kurulum reddedildi / agent tespit edilemedi) | tek-agent kurulum komutu — snippet aşağıda |
   | README mimari diagramı | bilinçli atlandıysa: neden (proje uygun değil) burada gerekçelendirilir |
@@ -332,6 +345,9 @@ onaylananlar için `git config --local --unset <key>` çalıştır — hepsini b
 
 ## İlkeler
 - **Önce onay**, sonra üret. Toplu dosya bombardımanı yok.
+- **Az soru.** Sorular tek `AskUserQuestion` çağrısında toplanır; ardışık tek-soru round-trip'i yok.
+  Tipik kurulum **1 soru** (Faz 2 batch'i); upgrade varsa +1, stack `unknown` ise +1. Varsayılanı olan
+  hiçbir şey ayrıca sorulmaz — takip sorusu yerine şıkların içine gömülür.
 - **Oku, uydurma.** Stack-bağımlı içerik gerçek koddan gelir.
 - **Doğrulanmadan tamam yok.** Her artefakt çalıştırılır.
 - **Agnostik kal.** Dile özgü tek şey `stack-profiles.md` tablosu; geri kalan her dilde aynı.

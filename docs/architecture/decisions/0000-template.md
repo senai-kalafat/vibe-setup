@@ -1,3 +1,4 @@
+<!-- vibe-setup:v1 (managed) -->
 # N. <Karar başlığı>
 
 - Status: proposed | accepted | superseded

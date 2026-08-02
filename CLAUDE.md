@@ -77,7 +77,8 @@ Detay: [docs/](docs/).
   "önceden vardı" sınıfı), yani `remove` bunu ASLA silmeye kalkışmaz (`migrate_legacy_agent_md`
   `NEW_PATHS`'e eklemez, sadece `WRITTEN_PATHS`'e — sha tazelenir ama provenance "ben ürettim" demez).
   `audit` da bunu init'ten önce sinyal verir.
-- **context-mode zorunlu bağımlılık** (v9+): SKILL.md Faz 3 her çalıştırmada sorulmadan kurar
+- **context-mode zorunlu bağımlılık** (SKILL.md-only — `VIBE_VERSION` ile ilgisi YOK, dosya-template
+  üretmez): SKILL.md Faz 3 her çalıştırmada sorulmadan kurar
   (`npm install -g context-mode` + Claude/Cursor repo-tracked JSON-merge + Antigravity global config).
   Subagent dispatch eden bir akış varsa (bu repoda: subagent-driven-development), her dispatch
   prompt'una context-mode kullanım talimatı **açıkça** eklenmeli — subagent taze context alır, parent
