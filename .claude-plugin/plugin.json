@@ -1,7 +1,7 @@
 {
   "name": "vibe-setup",
   "version": "0.4.0",
-  "description": "Audit any repository for AI/agent (vibe coding) readiness, scaffold the missing pieces, upgrade an already-set-up repo to a newer version, and remove what it created — stack- and language-agnostic.",
+  "description": "Audit any repository for AI/agent (vibe coding) readiness, scaffold the missing pieces, upgrade an already-set-up repo to a newer version, and remove what it created — stack- and language-agnostic. Setup also installs two global tooling dependencies (context-mode, caveman), which write outside the repo; both are listed and confirmed first.",
   "author": {
     "name": "Senai Kalafat"
   },

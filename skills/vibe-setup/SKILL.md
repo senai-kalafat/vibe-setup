@@ -5,7 +5,10 @@ description: >
   stack- and language-agnostic. Use when the user wants to check or bootstrap a project's
   agent-friendliness: CLAUDE.md, AGENTS.md, llms.txt, docs/ knowledge base + ADRs, a test harness,
   a real (human + AI) git pre-commit hook (fmt/lint/doc-sync), .claude/settings.json permissions,
-  commit/PR templates, and the reusable vibe checklist. Also UPGRADES an already-set-up repo to a newer
+  commit/PR templates, and the reusable vibe checklist. Setup also installs two mandatory tooling
+  dependencies globally (context-mode and caveman) — this writes outside the repo (npm global,
+  ~/.claude, ~/.config/opencode, ~/.gemini); both are listed and confirmed before anything runs.
+  Also UPGRADES an already-set-up repo to a newer
   skill version: re-applies changed managed templates (e.g. hook fixes) without clobbering human edits.
   Also REMOVES what it created (dry-run by default, explicit confirmation before deleting): only
   vibe-setup-created files that are still unchanged, never pre-existing or hand-edited ones.
@@ -89,7 +92,9 @@ Bundled dosyalar bu skill dizinindedir: `scaffold.sh`, `stack-profiles.md`, `vib
   (`@CLAUDE.md` importu — Gemini CLI içeriği doğrudan çeker, pointer değil).
 - Kullanıcı **Aider** dediyse: `bash "$SKILL_DIR/scaffold.sh" init-aider .` → `.aider.conf.yml`
   (`read: AGENTS.md` — Aider AGENTS.md'yi native okumaz, açıkça işaretlenmesi gerekir).
-- **context-mode kurulumu (HER ZAMAN, sorulmadan — zorunlu bağımlılık, artık opsiyonel değil):**
+- **context-mode kurulumu (HER ZAMAN, sorulmadan — zorunlu bağımlılık, opsiyonel değil):**
+  0. **Önce guard:** `command -v npm` boş dönerse **adımı tamamen atla** — kurmayı deneme, hata gösterme.
+     "npm yok, context-mode atlandı" diye tek satır bas ve Faz 6 tablosuna satır ekle. Faz 3 durmaz.
   1. `npm install -g context-mode` çalıştır, çıktıyı kullanıcıya göster.
   2. `.claude/settings.json`'ı **oku** (bu noktada `init .` zaten oluşturmuş olmalı), mevcut içeriğe
      aşağıdaki iki alanı **merge et** — var olan `permissions` ya da başka marketplace/plugin
@@ -123,6 +128,13 @@ Bundled dosyalar bu skill dizinindedir: `scaffold.sh`, `stack-profiles.md`, `vib
 - **caveman kurulumu (HER ZAMAN, sorulmadan — zorunlu bağımlılık, opsiyonel değil):**
   caveman çıktı-sıkıştırma modudur (~%75 output token tasarrufu, teknik doğruluk korunur).
   Kurulum Faz 2'nin 4. sorusunda zaten onaylandı — **burada tekrar onay isteme.**
+  0. **Önce guard:** `command -v curl` boş dönerse (ya da Windows/PowerShell ortamındaysan) `install.sh`
+     yerine PowerShell yolunu kullan:
+     ```powershell
+     irm https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.ps1 | iex
+     ```
+     İkisi de yoksa **adımı tamamen atla** — "curl yok, caveman atlandı" diye tek satır bas, Faz 6
+     tablosuna satır ekle. Faz 3 durmaz.
   1. Dry-run çalıştır, çıktıyı **bilgi olarak** bas (hangi agent'lar tespit edildi, ne yazılacak) —
      durup cevap bekleme:
      ```bash
@@ -219,7 +231,8 @@ Onaylanan her madde için:
   | .claude/settings.json | eklenen `permissions.deny` yollarını gözden geçir (Faz 4 sormadan ekledi) |
   | .mcp.json / settings.json | ekibe sabitlenecek projeye-özgü MCP varsa ekle (kanıt yoktu, sorulmadı) |
   | Codex CLI / Gemini CLI (Antigravity dışı) / Kimi Code | context-mode MCP kaydı (opsiyonel — zorunlu değil) |
-  | caveman (kurulum reddedildi / agent tespit edilemedi) | tek-agent kurulum komutu — snippet aşağıda |
+  | context-mode (npm yoktu → atlandı) | Node/npm kurup `npm install -g context-mode` |
+  | caveman (kurulum reddedildi / atlandı / agent tespit edilemedi) | tek-agent kurulum komutu — snippet aşağıda |
   | README mimari diagramı | bilinçli atlandıysa: neden (proje uygun değil) burada gerekçelendirilir |
   | … | (sadece gerçekten eksik/insan-gerektiren satırlar) |
 

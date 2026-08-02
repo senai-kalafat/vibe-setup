@@ -5,9 +5,14 @@ Herhangi bir repoyu **AI/agent destekli geliştirme ("vibe coding")** için dene
 
 Ne kurar: `CLAUDE.md`, `AGENTS.md`, `docs/` + ADR, test harness, herkesi bağlayan git
 pre-commit hook (fmt/lint/doc-sync), `.claude/settings.json` izinleri, commit/PR(MR) şablonları, opsiyonel
-Cursor/Gemini CLI/Aider kuralları, (ops) `llms.txt` ve tekrar kullanılabilir vibe checklist. context-mode'u
-(Claude/Cursor/Antigravity) zorunlu bağımlılık olarak kurar. Önce/sonra uyumluluk skoru gösterir. Kaldırmak
-istersen `remove` komutu (dry-run varsayılan) var.
+Cursor/Gemini CLI/Aider kuralları, (ops) `llms.txt` ve tekrar kullanılabilir vibe checklist.
+Önce/sonra uyumluluk skoru gösterir. Kaldırmak istersen `remove` komutu (dry-run varsayılan) var.
+
+**Repo dışına da yazar:** iki zorunlu bağımlılık global kurulur — **context-mode** (`npm install -g`,
+Claude/Cursor/Antigravity config'i) ve **caveman** (`install.sh --with-init`, makinedeki tüm agent'lar;
+`~/.claude`, `~/.config/opencode`, `~/.gemini`). İkisi de kurulum öncesi listelenir ve tek onay
+sorusunda teyit edilir; `npm`/`curl` yoksa sessizce atlanır, akış durmaz. `remove` bunları geri almaz —
+kaldırma komutları [SKILL.md](skills/vibe-setup/SKILL.md) Remove akışında.
 
 Desteklenen: Go, Node/TS, Python, Java, Kotlin, Swift, Rust, Ruby, .NET, PHP, Elixir + boş repo.
 
@@ -28,6 +33,7 @@ flowchart LR
 
   VS -->|"audit / init / upgrade / remove"| TR["Hedef repo<br/>CLAUDE.md · AGENTS.md · docs/<br/>git hooks · testler"]
   VS -.->|"npm install -g"| CM["context-mode<br/>(zorunlu bağımlılık)"]
+  VS -.->|"install.sh --with-init"| CV["caveman<br/>(zorunlu bağımlılık)"]
   VS -.->|"git tag ile self-update"| GH["GitHub<br/>senai-kalafat/vibe-setup"]
 ```
 
@@ -257,6 +263,7 @@ Skill bu maddelere göre denetler ve dolu halini repo köküne `vibe-checklist.m
 - **CLAUDE.md işaretçi tarzı** · Derin docs tembel yüklenir.
 - **Büyük/üretilmiş varlıklar engelli** · `permissions.deny` ile bundle/swagger/dist okunmaz → bağlam patlamaz.
 - **Projeye-özgü MCP repoya sabit** · Ekibin ortak, domaine bağlı sunucusu (DB/iç-doküman/Jira). context-mode zorunlu bağımlılık — Faz 3 otomatik kurar (Claude/Cursor repo-tracked, Antigravity global).
+- **Çıktı sıkıştırma** · caveman zorunlu bağımlılık — Faz 3 otomatik kurar (seviye `full`); agent çıktısı ~%75 küçülür, teknik doğruluk korunur. Hook'suz agent'larda AGENTS.md/CLAUDE.md kuralı zorlar.
 - **İzin allowlist** · Sık güvenli komutlar prompt'suz; mutasyon yapanlar hariç.
 
 ### DOĞRULAMA  *(çoğu proje burada çuvallar)*
