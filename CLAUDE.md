@@ -83,6 +83,11 @@ Detay: [docs/](docs/).
   Subagent dispatch eden bir akış varsa (bu repoda: subagent-driven-development), her dispatch
   prompt'una context-mode kullanım talimatı **açıkça** eklenmeli — subagent taze context alır, parent
   session'ın context-mode kurallarını miras almaz.
+- **Canlı kod dokunulmazlığı en sert kural.** SKILL.md `## İlkeler`'in ilk maddesi: mevcut kaynak/config/
+  CI/test dosyaları hiçbir koşulda düzenlenmez. Yeni özellik eklerken bunu ihlal etme — bir adım koda
+  dokunmayı gerektiriyorsa doğru tasarım "atla + kullanıcı-aksiyon tablosuna satır", "akıllıca düzelt"
+  değil. Profil `FMT` değerleri bu yüzden check-only (`gofmt -l`, `--check`, `--dry-run`, `-d`); yeni
+  stack eklerken write-mode formatter (`-w`, `--write`, `fix`) YAZMA.
 - **caveman zorunlu bağımlılık** (v8+): SKILL.md Faz 3 her çalıştırmada sorulmadan kurar
   (`install.sh --with-init` → tüm agent'lar auto-detect + repo-içi rule dosyaları). Seviye `full`.
   `AGENTS.md` template'inde aktivasyon satırı var (v8 — bu yüzden `VIBE_VERSION` 7→8 bump'landı);

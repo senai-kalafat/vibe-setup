@@ -113,8 +113,15 @@ Böylece "skill'i üst üste çalıştırma" güvenli: deterministik engine elle
 ezmez, LLM içeriği (CLAUDE.md/test) auto-touch edilmez — sadece yeni checklist maddeleri için hedefli öneri.
 
 ### İlkeler
-Önce onay → sonra üret · Oku, uydurma · Doğrulanmadan tamam yok · Agnostik kal · Idempotent (ezmez) ·
-**Sürümlü + üzerine-yazmaz** (kuruluysa init değil upgrade).
+**Canlı koda asla dokunmaz** · Önce onay → sonra üret · Oku, uydurma · Doğrulanmadan tamam yok ·
+Agnostik kal · Idempotent (ezmez) · **Sürümlü + üzerine-yazmaz** (kuruluysa init değil upgrade).
+
+**Canlı kod dokunulmazlığı** en sert kural: mevcut kaynak, config (`package.json`/`go.mod`/…), CI tanımı
+ve var olan testler hiçbir koşulda düzenlenmez, taşınmaz, formatlanmaz, refaktör edilmez. Yeni dosya
+eklemek serbest; mevcut dosyayı değiştirmek değil. Doküman-meta dosyalarına (`README.md`, `.gitignore`)
+sadece **ekleme** yapılır. Formatter'lar check-only (`gofmt -l`, `prettier --check`, `shfmt -d` …) —
+write-mode'a çevrilmez. Bir adım ancak koda dokunarak tamamlanabiliyorsa atlanır ve kullanıcı-aksiyon
+tablosuna gerekçesiyle düşer.
 
 ## Kurulum
 

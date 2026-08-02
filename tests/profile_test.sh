@@ -48,6 +48,30 @@ mkdir -p "$tmp/sh" && : > "$tmp/sh/tool.sh"
 [ "$(field_of "$tmp/go" LINT_FILE_OK)" = "0" ]   && { echo "  ok: go LINT_FILE_OK=0"; pass=$((pass+1)); }      || { echo "  FAIL: go LINT_FILE_OK"; fail=$((fail+1)); }
 [ "$(field_of "$tmp/rust" LINT_FILE_OK)" = "0" ] && { echo "  ok: rust LINT_FILE_OK=0"; pass=$((pass+1)); }    || { echo "  FAIL: rust LINT_FILE_OK"; fail=$((fail+1)); }
 
+# FMT check-only degismezi — "canli koda asla dokunma" ilkesinin deterministik guard'i.
+# Hicbir stack'in FMT'si dosyaya YAZMAMALI: write-mode bayragi (-w / --write / -i) yasak,
+# ve her FMT bir check isaretcisi icermeli. Yeni stack eklerken bu test kirilirsa kural ihlal edilmistir.
+mkdir -p "$tmp/rb"  && : > "$tmp/rb/Gemfile"
+mkdir -p "$tmp/php" && echo '{}' > "$tmp/php/composer.json"
+mkdir -p "$tmp/rust2" && : > "$tmp/rust2/Cargo.toml"
+mkdir -p "$tmp/net" && : > "$tmp/net/app.csproj"
+for d in go node py sh kt java swift ex biome rb php rust2 net; do
+  f="$(field_of "$tmp/$d" FMT)"
+  [ -z "$f" ] || [ "$f" = "-" ] && continue
+  # Yasak: dosyaya yazan bayraklar. (Bare `rubocop` / `biome check` varsayilanda YAZMAZ —
+  # yazmak icin acikca -a/-A/--write gerekir; bu yuzden bayrak yoklugu dogru degismez.)
+  bad=""
+  case " $f " in
+    *" -w "*|*" --write "*|*" -i "*|*" -a "*|*" -A "*|*" --autocorrect"*|*" --apply"*|*" --fix "*)
+      bad=1 ;;
+  esac
+  if [ -n "$bad" ]; then
+    echo "  FAIL: $d FMT write-mode bayragi tasiyor: '$f' — canli koda dokunma ihlali"; fail=$((fail+1))
+  else
+    echo "  ok: $d FMT yazmaz ($f)"; pass=$((pass+1))
+  fi
+done
+
 # VIBE_VERSION: profile çıktısı şema sürümünü basar (11. satır)
 [ "$(field_of "$tmp/go" VIBE_VERSION)" = "8" ] && { echo "  ok: profile VIBE_VERSION=8"; pass=$((pass+1)); } || { echo "  FAIL: profile VIBE_VERSION — beklenen 8, gelen '$(field_of "$tmp/go" VIBE_VERSION)'"; fail=$((fail+1)); }
 

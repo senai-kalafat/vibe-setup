@@ -5,7 +5,9 @@ description: >
   stack- and language-agnostic. Use when the user wants to check or bootstrap a project's
   agent-friendliness: CLAUDE.md, AGENTS.md, llms.txt, docs/ knowledge base + ADRs, a test harness,
   a real (human + AI) git pre-commit hook (fmt/lint/doc-sync), .claude/settings.json permissions,
-  commit/PR templates, and the reusable vibe checklist. Setup also installs two mandatory tooling
+  commit/PR templates, and the reusable vibe checklist. It NEVER modifies existing source, config, CI or
+  test files — it only adds new files and appends to doc/meta files; any step that would require touching
+  live code is skipped and reported instead. Setup also installs two mandatory tooling
   dependencies globally (context-mode and caveman) — this writes outside the repo (npm global,
   ~/.claude, ~/.config/opencode, ~/.gemini); both are listed and confirmed before anything runs.
   Also UPGRADES an already-set-up repo to a newer
@@ -146,6 +148,12 @@ Bundled dosyalar bu skill dizinindedir: `scaffold.sh`, `stack-profiles.md`, `vib
   3. **Repo dışına yazılan yolları açıkça raporla** — `~/.claude`, `~/.config/opencode`, `~/.gemini`,
      `~/.openclaw/workspace`. Bu, Antigravity `mcp_config.json` kuralının aynısı: kullanıcının home
      dizini vibe-setup'ın normal kapsamı değil, **sessizce yapma**.
+  3.5. **Clobber guard:** `install.sh` repo-içi rule dosyalarına yazar ve var olanı koruduğu garanti
+     DEĞİL. Çalıştırmadan **önce** var olanların sha'sını al (`.cursor/rules/caveman.mdc`,
+     `.windsurf/rules/caveman.md`, `.clinerules/caveman.md`, `.github/copilot-instructions.md`,
+     `.opencode/AGENTS.md`), **sonra** karşılaştır. Önceden var olan bir dosya değiştiyse: kullanıcıya
+     **açıkça bildir** ve `git diff` ile ne değiştiğini göster (repo git'liyse zaten kurtarılabilir;
+     değilse bunu da söyle). Sessizce geçme.
   4. `--with-init`'in **repoya** düşürdüklerini NEW olarak listele: `.cursor/rules/caveman.mdc`,
      `.windsurf/rules/caveman.md`, `.clinerules/caveman.md`, `.github/copilot-instructions.md`,
      `.opencode/AGENTS.md`. (`AGENTS.md`'deki caveman satırı bunlardan bağımsız — o `init`'in
@@ -162,6 +170,11 @@ Bundled dosyalar bu skill dizinindedir: `scaffold.sh`, `stack-profiles.md`, `vib
 - Script var olanı **ezmez** (SKIP). Çıktıdaki NEW/SKIP/EDIT'i kullanıcıya aktar.
 
 ### 4. Stack-bağımlı içerik (sen üret — repoyu OKU, uydurma)
+
+> **Bu fazın sert sınırı:** repoyu **oku**, mevcut kaynak/config/test dosyalarını **yazma**. Bu fazda
+> ürettiğin her şey ya yeni dosya ya da doküman-meta dosyasına ekleme. Bir madde ancak canlı koda
+> dokunarak tamamlanabiliyorsa → **atla + Faz 6'ya satır**. Bkz `## İlkeler`.
+
 Onaylanan her madde için:
 - **CLAUDE.md**: modül kökü kuralı, komutlar (profilden), mimari özet, **Gotchas** (koddan çıkarılması zor
   tuzaklar — gerçek koddan çıkar), git workflow. İşaretçi tarzı: docs'a yönlendir, içerik dökme.
@@ -175,7 +188,8 @@ Onaylanan her madde için:
   işlemesini sağlayan tribal bilgi).
 - **docs**: iskeletteki `<TODO>`'ları gerçek içerikle değiştir (kod haritası, conventions).
 - **README mimari diagramı (zorunlu deliverable):** README.md'nin başına (girişten hemen sonra) tek bir
-  mermaid diagram + 2-3 cümle özet ekle — proje tek kutu, çevresinde **dış bağlantılar** (DB, harici
+  mermaid diagram + 2-3 cümle özet **ekle** — mevcut metni yeniden yazma/yeniden düzenleme, sadece insert.
+  Zaten bir mimari diagram varsa dokunma, Faz 6'da "mevcut diagram korundu" de. — proje tek kutu, çevresinde **dış bağlantılar** (DB, harici
   API'ler, 3rd-party servisler, kullanıcı/istemci). Çok detaya girme, sadece sistem-sınırı görünümü.
   Repoyu **oku**, gerçek bağlantıları çıkar — uydurma. Proje gerçekten diagram'a uygun değilse (ör.
   tek-dosyalık script), Faz 6'da bunu gerekçeli olarak not düş — sessizce atlama.
@@ -184,7 +198,11 @@ Onaylanan her madde için:
 - **(ops) llms.txt**: init bunu **düşürmez** (iç repoda tüketicisi yok). Sadece dış LLM/dokümantasyon
   sitesi tüketecekse `llmstxt.org` formatında elle ekle.
 - **Test harness**: MODULE_DIR'de saf/deterministik bir fonksiyon bul, dile uygun **gerçek geçen** test yaz
-  (profil `TEST_FIND` deseni). Çalıştır, geçtiğini doğrula.
+  (profil `TEST_FIND` deseni). Çalıştır, geçtiğini doğrula. Test **yeni dosyadır** — mevcut test dosyasına
+  ekleme yapma, mevcut testleri düzenleme.
+  - **Uygun fonksiyon yoksa kodu test edilebilir hale GETİRME** (export etme, imzayı değiştirme, bağımlılık
+    enjekte etme, dosya bölme — hepsi yasak). Test adımını **atla**, Faz 6 tablosuna "test harness: saf
+    fonksiyon bulunamadı, önce şu refaktör gerekiyor (öneri, uygulanmadı)" satırı düş.
 - **pre-commit**: nested module ise `cd <MODULE_DIR>` ekle (staged yolları MODULE_DIR'e göre düzelt).
   Hook fmt'i **otomatik** ayarlar: file-capable stack'te sadece staged dosyalar (eski dirt bloklamaz),
   scope edilemeyen stack'te (java/rust/dotnet) advisory + "CI zorlasın". Tool kurulu değilse atlar.
@@ -204,6 +222,10 @@ Onaylanan her madde için:
 
 ### 5. Doğrula
 - Üretilen her şeyi çalıştırarak doğrula: test (`TEST`), fmt (`FMT`), build (`BUILD`), hook kuru-çalıştırma.
+  - `FMT` profilden gelir ve **check-only**'dir. Write-mode'a çevirme. Mevcut kodda önceden var olan fmt
+    ihlallerini **düzeltme** — raporla, Faz 6 tablosuna satır düş, geç.
+  - `TEST` mevcut testleri kırıyorsa: senin eklediğin test yüzünden değilse **dokunma** — bu repo zaten
+    kırıktı. Raporla, Faz 6'ya satır, akışı durdurma.
 - settings.json düzenledikten sonra JSON geçerliliğini kontrol et.
 - Hiçbir şeyi "tamam" deme önce çalıştırmadan.
 
@@ -231,6 +253,8 @@ Onaylanan her madde için:
   | .claude/settings.json | eklenen `permissions.deny` yollarını gözden geçir (Faz 4 sormadan ekledi) |
   | .mcp.json / settings.json | ekibe sabitlenecek projeye-özgü MCP varsa ekle (kanıt yoktu, sorulmadı) |
   | Codex CLI / Gemini CLI (Antigravity dışı) / Kimi Code | context-mode MCP kaydı (opsiyonel — zorunlu değil) |
+  | test harness (atlandı) | saf fonksiyon yoktu — önerilen refaktör (uygulanmadı, canlı koda dokunulmaz) |
+  | mevcut fmt/test ihlalleri | repoda önceden vardı — düzeltilmedi, canlı koda dokunulmaz |
   | context-mode (npm yoktu → atlandı) | Node/npm kurup `npm install -g context-mode` |
   | caveman (kurulum reddedildi / atlandı / agent tespit edilemedi) | tek-agent kurulum komutu — snippet aşağıda |
   | README mimari diagramı | bilinçli atlandıysa: neden (proje uygun değil) burada gerekçelendirilir |
@@ -357,6 +381,18 @@ onaylananlar için `git config --local --unset <key>` çalıştır — hepsini b
   template'inin parçası; `remove` onu zaten kendi kuralına göre ele alır.
 
 ## İlkeler
+- **Canlı koda ASLA dokunma.** Bu skill agent altyapısı kurar — çalışan yazılımı değiştirmez.
+  Mevcut **kaynak, config ve test** dosyaları (uygulama kodu, `package.json`/`go.mod`/`pyproject.toml`
+  gibi manifestler, CI tanımları, var olan testler) **hiçbir koşulda** düzenlenmez, taşınmaz, yeniden
+  formatlanmaz, refaktör edilmez. "Sadece şu importu düzeltsem", "şu fonksiyonu test edilebilir yapsam",
+  "bu arada şunu da formatlasam" — **hayır.** Bir adım ancak koda dokunarak tamamlanabiliyorsa: o adımı
+  **ATLA**, Faz 6 kullanıcı-aksiyon tablosuna gerekçesiyle satır düş, akışı durdurma.
+  - Yeni **dosya eklemek** serbest (test dosyası, docs, hook) — mevcut dosyayı **değiştirmek** değil.
+  - Doküman/meta dosyalara (`README.md`, `.gitignore`, `AGENT.md`) **ekleme** yapılabilir: mevcut içerik
+    silinmeden, append/insert. İçerik yeniden yazılmaz, yeniden düzenlenmez.
+  - Formatter'lar zaten check-only (`gofmt -l`, `prettier --check`, `ruff format --check`,
+    `dotnet format --verify-no-changes`, `shfmt -d` …) — **asla** write-mode varyantına (`-w`, `--write`,
+    `fix`) çevirme.
 - **Önce onay**, sonra üret. Toplu dosya bombardımanı yok.
 - **Az soru.** Sorular tek `AskUserQuestion` çağrısında toplanır; ardışık tek-soru round-trip'i yok.
   Tipik kurulum **1 soru** (Faz 2 batch'i); upgrade varsa +1, stack `unknown` ise +1. Varsayılanı olan
