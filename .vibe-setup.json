@@ -1,7 +1,7 @@
 {
-  "vibeVersion": 8,
+  "vibeVersion": 9,
   "stack": "shell",
-  "generatedAt": "2026-08-02T09:42:10Z",
+  "generatedAt": "2026-08-03T05:56:33Z",
   "managed": {
     "AGENTS.md": { "v": 4, "sha": "3133797768", "created": false },
     "docs/README.md": { "v": 1, "sha": "693105294", "created": false },
@@ -10,6 +10,7 @@
     ".githooks/pre-commit": { "v": 7, "sha": "643851744", "created": false },
     ".githooks/commit-msg": { "v": 3, "sha": "3284126891", "created": false },
     ".claude/settings.json": { "v": 1, "sha": "3900946474", "created": false },
+    ".claude/hooks/vibe-session-check.sh": { "v": 9, "sha": "3061540106", "created": true },
     ".github/pull_request_template.md": { "v": 1, "sha": "2401060311", "created": false }
   },
   "extras": {

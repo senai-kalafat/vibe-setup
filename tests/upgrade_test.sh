@@ -19,7 +19,7 @@ set_msha() { # $1 manifest $2 path $3 newsha
 # A. init manifest doğru
 d="$(fresh A)"
 [ -f "$d/.vibe-setup.json" ] && ok "init manifest yazdı" || bad "manifest yok"
-grep -q '"vibeVersion": 8' "$d/.vibe-setup.json" && ok "vibeVersion=8" || bad "vibeVersion yok/yanlış"
+grep -q '"vibeVersion": 9' "$d/.vibe-setup.json" && ok "vibeVersion=9" || bad "vibeVersion yok/yanlış"
 grep -q '".githooks/pre-commit": { "v": 7' "$d/.vibe-setup.json" && ok "pre-commit v7 kayıtlı" || bad "pre-commit v kaydı yok"
 grep -q '"AGENTS.md": { "v": 8' "$d/.vibe-setup.json" && ok "AGENTS.md v8 kayıtlı" || bad "AGENTS.md v kaydı yok"
 
@@ -73,10 +73,10 @@ printf '%s\n' "$(field "$out" CONFLICT)" | grep -q 'pre-commit' && ok "legacy fa
 
 # H. eski manifest sürümü → upgrade sürümü yükseltir; git-repo-değil → v3 migration atlanır (probe-guard)
 d="$(fresh H)"
-awk '{ sub(/"vibeVersion": 8/, "\"vibeVersion\": 1"); print }' "$d/.vibe-setup.json" > "$d/.vibe-setup.json.t" && mv "$d/.vibe-setup.json.t" "$d/.vibe-setup.json"
+awk '{ sub(/"vibeVersion": 9/, "\"vibeVersion\": 1"); print }' "$d/.vibe-setup.json" > "$d/.vibe-setup.json.t" && mv "$d/.vibe-setup.json.t" "$d/.vibe-setup.json"
 out="$(bash "$SCAFFOLD" upgrade "$d" 2>/dev/null)"
 printf '%s' "$out" | grep -q 'applied=v1' && ok "eski uygulanan sürüm algılandı (v1)" || bad "applied=v1 basılmadı"
-grep -q '"vibeVersion": 8' "$d/.vibe-setup.json" && ok "manifest v8'e yükseltildi" || bad "manifest sürümü yükselmedi"
+grep -q '"vibeVersion": 9' "$d/.vibe-setup.json" && ok "manifest v9'a yükseltildi" || bad "manifest sürümü yükselmedi"
 printf '%s\n' "$out" | grep -q '^MIGRATED=' && ok "MIGRATED satırı basıldı" || bad "MIGRATED satırı yok"
 [ -z "$(field "$out" MIGRATED)" ] && ok "git-repo-değil → migration atlandı (MIGRATED boş)" || bad "beklenmedik MIGRATED: '$(field "$out" MIGRATED)'"
 
@@ -84,7 +84,7 @@ printf '%s\n' "$out" | grep -q '^MIGRATED=' && ok "MIGRATED satırı basıldı" 
 if command -v git >/dev/null 2>&1; then
   d="$tmp/I"; mkdir -p "$d"; git -C "$d" init -q
   echo '{}' > "$d/package.json"; bash "$SCAFFOLD" init "$d" >/dev/null 2>&1
-  awk '{ sub(/"vibeVersion": 8/, "\"vibeVersion\": 1"); print }' "$d/.vibe-setup.json" > "$d/.vibe-setup.json.t" && mv "$d/.vibe-setup.json.t" "$d/.vibe-setup.json"
+  awk '{ sub(/"vibeVersion": 9/, "\"vibeVersion\": 1"); print }' "$d/.vibe-setup.json" > "$d/.vibe-setup.json.t" && mv "$d/.vibe-setup.json.t" "$d/.vibe-setup.json"
   out="$(bash "$SCAFFOLD" upgrade "$d" 2>/dev/null)"
   printf '%s' "$(field "$out" MIGRATED)" | grep -q 'ticketre' && ok "v3 migration: MIGRATED ticketre bildirir" || bad "MIGRATED ticketre yok: '$(field "$out" MIGRATED)'"
   [ "$(git -C "$d" config --get vibe.ticketre)" = '^[A-Z]{3}-[0-9]{1,4} ' ] && ok "vibe.ticketre eski desene sabitlendi" || bad "vibe.ticketre set edilmedi"
@@ -106,11 +106,11 @@ grep -q 'KULLANICI OZEL SATIR' "$d/.githooks/pre-commit" && ok "J: kullanici edi
 
 # K. REGRESYON: init-cursor/init-gemini eski vibeVersion'i bozmaz (UPDATE_AVAILABLE sinyali korunur)
 d="$(fresh K)"
-awk '{ sub(/"vibeVersion": 8/, "\"vibeVersion\": 2"); print }' "$d/.vibe-setup.json" > "$d/.vibe-setup.json.t" && mv "$d/.vibe-setup.json.t" "$d/.vibe-setup.json"
+awk '{ sub(/"vibeVersion": 9/, "\"vibeVersion\": 2"); print }' "$d/.vibe-setup.json" > "$d/.vibe-setup.json.t" && mv "$d/.vibe-setup.json.t" "$d/.vibe-setup.json"
 bash "$SCAFFOLD" init-cursor "$d" >/dev/null 2>&1
 grep -q '"vibeVersion": 2' "$d/.vibe-setup.json" && ok "K: init-cursor eski vibeVersion'i korudu" || bad "K: init-cursor vibeVersion'i yanlislikla guncelledi"
 out3="$(bash "$SCAFFOLD" audit "$d" 2>/dev/null)"
-printf '%s' "$out3" | grep -q 'UPDATE_AVAILABLE=v2->v8' && ok "K: audit hala UPDATE_AVAILABLE basiyor (sinyal kaybolmadi)" || bad "K: UPDATE_AVAILABLE sinyali kayboldu"
+printf '%s' "$out3" | grep -q 'UPDATE_AVAILABLE=v2->v9' && ok "K: audit hala UPDATE_AVAILABLE basiyor (sinyal kaybolmadi)" || bad "K: UPDATE_AVAILABLE sinyali kayboldu"
 
 # L. REGRESYON: migrate_legacy_agent_md ile gelen AGENTS.md (created:false) sha eslesse bile
 #    upgrade tarafindan sablonla EZILMEMELI — provenance "vibe-setup uretti" demiyor, sha-eslesmesi

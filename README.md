@@ -8,6 +8,11 @@ pre-commit hook (fmt/lint/doc-sync), `.claude/settings.json` izinleri, commit/PR
 Cursor/Gemini CLI/Aider kuralları, (ops) `llms.txt` ve tekrar kullanılabilir vibe checklist.
 Önce/sonra uyumluluk skoru gösterir. Kaldırmak istersen `remove` komutu (dry-run varsayılan) var.
 
+**Oturum kontrolü:** repoya `.claude/hooks/vibe-session-check.sh` düşer (repo-tracked, ekip geneli).
+Her session açılışında zorunlu bağımlılıkların aktif olup olmadığına bakar. **Sessizdir** — her şey
+yolundaysa hiçbir şey basmaz; eksik varsa tek satır uyarı + düzeltme komutu verir. **Asla bloklamaz**
+(her yolda `exit 0`), ağa çıkmaz, dosya yazmaz.
+
 **Repo dışına da yazar:** iki zorunlu bağımlılık global kurulur — **context-mode** (`npm install -g`,
 Claude/Cursor/Antigravity config'i) ve **caveman** (`install.sh --with-init`, makinedeki tüm agent'lar;
 `~/.claude`, `~/.config/opencode`, `~/.gemini`). İkisi de kurulum öncesi listelenir ve tek onay

@@ -83,6 +83,15 @@ Detay: [docs/](docs/).
   Subagent dispatch eden bir akış varsa (bu repoda: subagent-driven-development), her dispatch
   prompt'una context-mode kullanım talimatı **açıkça** eklenmeli — subagent taze context alır, parent
   session'ın context-mode kurallarını miras almaz.
+- **SessionStart hook'u İKİ parçalı** (v9+): `.claude/hooks/vibe-session-check.sh` **managed/synced**
+  (engine sürdürür, upgrade taşır) ama `.claude/settings.json`'daki `hooks.SessionStart` kaydı **seed** —
+  engine ona ASLA dokunmaz, kaydı SKILL.md (LLM) merge eder. Sonuç: `upgrade` hook'u ADD eder ama kaydı
+  etmez → v8'den gelen repolarda LLM adımı atlanırsa hook repoda durur, hiç çalışmaz. `remove`'da tersi:
+  dosya silinir, kayıt geride kalır (ölü kayıt). İkisi de SKILL.md'de açıkça ele alınıyor.
+  Hook değişmezleri: **sessiz** (sağlıklıyken sıfır çıktı) + **asla bloklamaz** (her yolda `exit 0`) +
+  ağsız. `tests/session_hook_test.sh` bunları stub'lı ortamda zorluyor — gerçek caveman/context-mode
+  kurulumuna bağımlı değil (yokluk senaryosu `PATH=/usr/bin:/bin` ile kurulur, çünkü bu makinede
+  context-mode gerçekten kurulu).
 - **Canlı kod dokunulmazlığı en sert kural.** SKILL.md `## İlkeler`'in ilk maddesi: mevcut kaynak/config/
   CI/test dosyaları hiçbir koşulda düzenlenmez. Yeni özellik eklerken bunu ihlal etme — bir adım koda
   dokunmayı gerektiriyorsa doğru tasarım "atla + kullanıcı-aksiyon tablosuna satır", "akıllıca düzelt"

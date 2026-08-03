@@ -18,7 +18,7 @@ set -euo pipefail
 
 # Şema versiyonu (tamsayı). Bir managed template VEYA migration değiştiğinde +1; artifact_changed_in'i de güncelle.
 # plugin.json semver'i ayrı (marketplace); bu sayı upgrade/migration anahtarıdır.
-VIBE_VERSION=8
+VIBE_VERSION=9
 
 APPLY=0
 ARGS=()
@@ -95,7 +95,8 @@ pr_template_path() {
 # Engine'in ürettiği agnostik managed dosyalar (repo kökünde; PR yolu VCS'e göre).
 managed_paths() {
   printf '%s\n' AGENTS.md docs/README.md docs/architecture/decisions/0000-template.md \
-    .gitmessage .githooks/pre-commit .githooks/commit-msg .claude/settings.json "$(pr_template_path)"
+    .gitmessage .githooks/pre-commit .githooks/commit-msg .claude/settings.json \
+    .claude/hooks/vibe-session-check.sh "$(pr_template_path)"
 }
 managed_present() { local p; for p in $(managed_paths); do [ -e "$p" ] && return 0; done; return 1; }
 # init-cursor/init-gemini'nin düşürdüğü "extra" dosyalar — managed_paths'e GİRMEZ (versiyon/drift takibi yok,
@@ -109,11 +110,12 @@ artifact_changed_in() { case "$1" in
   .githooks/commit-msg) echo 3 ;;   # v3: ticket-key hard-coded → opsiyonel (git config vibe.ticketre; ayarsız = bloklamaz)
   .gitmessage)          echo 3 ;;   # v3: ticket-key opsiyonel ibaresi
   AGENTS.md)            echo 8 ;;   # v8: caveman aktivasyon satırı (v4: Gemini AGENTS.md okumaz iddiası düzeltilmişti)
+  .claude/hooks/vibe-session-check.sh) echo 9 ;;   # v9: repo-tracked SessionStart bağımlılık kontrolü (sessiz, non-blocking)
   *) echo 1 ;;
 esac ; }
 # synced = engine sürdürür (template drift → update/conflict). seed = bir kez düşer, sonra kullanıcı sahibi (drift normal).
 artifact_class() { case "$1" in
-  AGENTS.md|docs/architecture/decisions/0000-template.md|.githooks/pre-commit|.githooks/commit-msg) echo synced ;;
+  AGENTS.md|docs/architecture/decisions/0000-template.md|.githooks/pre-commit|.githooks/commit-msg|.claude/hooks/vibe-session-check.sh) echo synced ;;
   *) echo seed ;;   # docs/README.md (LLM doldurur), .gitmessage (ticket uyarlanır), settings.json (LLM doldurur), PR/MR
 esac ; }
 
@@ -345,6 +347,30 @@ if ! printf '%s' "$subject" | grep -qE "$re"; then
 fi
 EOF
     ;;
+    .claude/hooks/vibe-session-check.sh) emit "$1" <<'EOF'
+#!/usr/bin/env sh
+# vibe-setup:v@VER@ (managed; elle düzenlersen upgrade EZMEZ → CONFLICT → LLM merge)
+# Repo-tracked SessionStart kontrolü: zorunlu bağımlılıklar (caveman + context-mode) aktif mi?
+# SESSİZ — her şey yolundaysa hiçbir şey basmaz. ASLA bloklamaz: her yolda exit 0.
+# Ağa çıkmaz, dosya yazmaz, saniyenin altında biter.
+missing=""
+[ -f "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/.caveman-active" ] || missing="caveman"
+if ! command -v context-mode >/dev/null 2>&1; then
+  [ -n "$missing" ] && missing="$missing, context-mode" || missing="context-mode"
+fi
+[ -z "$missing" ] && exit 0
+
+echo "vibe-setup: zorunlu bağımlılık aktif değil → $missing"
+case "$missing" in *caveman*)
+  echo "  caveman: bu session'da aktif değil → /caveman full"
+  echo "           (hiç kurulu değilse: curl -fsSL https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.sh | bash -s -- --with-init)" ;;
+esac
+case "$missing" in *context-mode*)
+  echo "  context-mode: npm install -g context-mode" ;;
+esac
+exit 0
+EOF
+    ;;
     .claude/settings.json) cat <<'EOF'
 {
   "permissions": {
@@ -458,7 +484,7 @@ write_managed() {  # $1 = managed path
   if [ -e "$1" ]; then echo "  SKIP  $1 (var)"; return; fi
   mkdir -p "$(dirname "$1")"
   render_artifact "$1" > "$1"
-  case "$1" in .githooks/*) chmod +x "$1" ;; esac
+  case "$1" in .githooks/*|.claude/hooks/*) chmod +x "$1" ;; esac
   NEW_PATHS="$NEW_PATHS $1"
   WRITTEN_PATHS="$WRITTEN_PATHS $1"
   echo "  NEW   $1"
@@ -549,7 +575,7 @@ upgrade() {
     # migrate_legacy_agent_md gibi taşınmış içerik) → güvenli CONFLICT (sha eşleşse bile EZME):
     if [ "$legacy" -eq 1 ] || [ -z "$mansha" ] || [ "$mancreated" = "false" ]; then conf+=("$p")
     elif [ "$cursha" = "$mansha" ]; then                              # dokunulmamış → güvenli UPDATE
-      cp "$tmp" "$p"; case "$p" in .githooks/*) chmod +x "$p" ;; esac; upd+=("$p")
+      cp "$tmp" "$p"; case "$p" in .githooks/*|.claude/hooks/*) chmod +x "$p" ;; esac; upd+=("$p")
     else conf+=("$p"); fi                                             # elle düzenlenmiş → CONFLICT (ezme)
   done
   rm -f "$tmp"

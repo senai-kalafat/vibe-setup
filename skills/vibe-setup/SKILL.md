@@ -94,6 +94,20 @@ Bundled dosyalar bu skill dizinindedir: `scaffold.sh`, `stack-profiles.md`, `vib
   (`@CLAUDE.md` importu — Gemini CLI içeriği doğrudan çeker, pointer değil).
 - Kullanıcı **Aider** dediyse: `bash "$SKILL_DIR/scaffold.sh" init-aider .` → `.aider.conf.yml`
   (`read: AGENTS.md` — Aider AGENTS.md'yi native okumaz, açıkça işaretlenmesi gerekir).
+- **SessionStart hook kaydı (HER ZAMAN, sorulmadan):** `init` `.claude/hooks/vibe-session-check.sh`'i
+  düşürdü (managed, +x, v9+) — ama Claude Code'un onu çalıştırması için `.claude/settings.json`'a
+  kayıt gerek. settings.json'ı **oku**, aşağıdaki alanı **merge et** (var olan `hooks` girdilerini
+  **ezme**, sadece ekle; aynı komut zaten varsa tekrar ekleme):
+  ```json
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [ { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/vibe-session-check.sh", "timeout": 5 } ] }
+    ]
+  }
+  ```
+  Hook **sessizdir** (her şey yolundaysa hiçbir şey basmaz) ve **asla bloklamaz** (her yolda `exit 0`).
+  Repo-tracked → git'e girer, repoyu klonlayan tüm ekip için çalışır. Kullanıcıya bunu tek cümleyle
+  söyle: "ekip geneli, sessiz, bloklamaz".
 - **context-mode kurulumu (HER ZAMAN, sorulmadan — zorunlu bağımlılık, opsiyonel değil):**
   0. **Önce guard:** `command -v npm` boş dönerse **adımı tamamen atla** — kurmayı deneme, hata gösterme.
      "npm yok, context-mode atlandı" diye tek satır bas ve Faz 6 tablosuna satır ekle. Faz 3 durmaz.
@@ -229,6 +243,24 @@ Onaylanan her madde için:
 - settings.json düzenledikten sonra JSON geçerliliğini kontrol et.
 - Hiçbir şeyi "tamam" deme önce çalıştırmadan.
 
+- **Zorunlu bağımlılık smoke check (atlanmaz).** Faz 3 kurulumu "çalıştı" demek yetmez — kurulumun
+  gerçekten tuttuğunu doğrula. Hepsi offline, ağsız, saniyeler:
+  ```bash
+  # caveman: aktivasyon hook'u flag dosyası yazar
+  ls "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/.caveman-active" 2>/dev/null && echo "caveman: flag var" || echo "caveman: flag YOK"
+  # context-mode: binary PATH'te mi
+  command -v context-mode >/dev/null && echo "context-mode: binary var" || echo "context-mode: binary YOK"
+  # repo-tracked kayıtlar gerçekten merge oldu mu (jq varsa; yoksa grep)
+  grep -q 'context-mode' .claude/settings.json && echo "settings.json: context-mode kayıtlı" || echo "settings.json: context-mode YOK"
+  ```
+  Sonuçları **tablo olarak** kullanıcıya bas. Bir madde başarısızsa:
+  - Faz 6 kullanıcı-aksiyon tablosuna düzeltme komutuyla satır düş,
+  - **akışı durdurma, tekrar kurmayı deneme** (kurulum zaten çalıştı; ikinci deneme aynı sonucu verir),
+  - "kuruldu" DEME — smoke geçmediyse raporda açıkça "kurulum doğrulanamadı" yaz.
+  - `.caveman-active` yoksa bu **normal de olabilir**: flag'i caveman'in `SessionStart` hook'u yazar,
+    yani ilk kurulumdan sonra **yeni bir session açılana kadar** görünmez. Bunu böyle raporla —
+    "caveman kuruldu, aktivasyon bir sonraki session'da doğrulanacak" — arıza gibi gösterme.
+
 ### 6. AFTER audit + checklist + özet
 - `bash "$SKILL_DIR/scaffold.sh" audit .` tekrar çalıştır → AFTER `SCORE=N/M` + satır marklar.
 - **Before/After uyumluluk tablosu** göster (her kategori + toplam):
@@ -255,7 +287,7 @@ Onaylanan her madde için:
   | Codex CLI / Gemini CLI (Antigravity dışı) / Kimi Code | context-mode MCP kaydı (opsiyonel — zorunlu değil) |
   | test harness (atlandı) | saf fonksiyon yoktu — önerilen refaktör (uygulanmadı, canlı koda dokunulmaz) |
   | mevcut fmt/test ihlalleri | repoda önceden vardı — düzeltilmedi, canlı koda dokunulmaz |
-  | context-mode (npm yoktu → atlandı) | Node/npm kurup `npm install -g context-mode` |
+  | context-mode (npm yoktu → atlandı / smoke geçmedi) | Node/npm kurup `npm install -g context-mode` |
   | caveman (kurulum reddedildi / atlandı / agent tespit edilemedi) | tek-agent kurulum komutu — snippet aşağıda |
   | README mimari diagramı | bilinçli atlandıysa: neden (proje uygun değil) burada gerekçelendirilir |
   | … | (sadece gerçekten eksik/insan-gerektiren satırlar) |
@@ -310,6 +342,10 @@ dokunulmamış olanları sürüme taşır, elle düzenlenmişleri CONFLICT olara
     dönerse: Faz 2'deki AYNI soruyu sor — **"doc-sync'i zorlayıcı (blocking) yapayım mı?"** Evet ise
     `git config vibe.strictdocs true` çalıştır.
 - ADD: `bash "$SKILL_DIR/scaffold.sh" init .` eksikleri düşürür (idempotent; var olanı ezmez).
+  - `.claude/hooks/vibe-session-check.sh` ADD edildiyse (v8 → v9 geçişi): dosya düştü ama **kaydı
+    düşmedi** — `.claude/settings.json` `seed` sınıfı, engine ona hiç dokunmaz. Faz 3'teki `hooks.SessionStart`
+    bloğunu settings.json'a **merge et** (var olan `hooks` girdilerini ezme, aynı komut varsa tekrar ekleme).
+    Bu adım atlanırsa hook repoda durur ama hiç çalışmaz.
 - MIGRATED: ne yapıldığını aktar.
 
 ### 3. CONFLICT — sen (LLM) merge et, ASLA körlemesine ezme
@@ -368,6 +404,10 @@ onaylananlar için `git config --local --unset <key>` çalıştır — hepsini b
 ### 5. Kapanış
 - Kapsam dışı hatırlat: CLAUDE.md, docs/, tests/, .claude/settings.json içeriği, vibe-checklist.md elle
   gözden geçirilmeli — bunlara hiç dokunulmadı.
+- **Ölü hook kaydı uyarısı:** `remove` `.claude/hooks/vibe-session-check.sh`'i (managed olduğu için)
+  sildiyse, `settings.json`'daki `hooks.SessionStart` kaydı **geride kalır** — settings.json kapsam dışı,
+  engine ona dokunmaz. Kullanıcıya söyle: o bloğu elle sil, yoksa Claude Code her session'da var olmayan
+  bir dosyayı çalıştırmaya çalışır.
 - `vibe-remove-report.md`'nin repo kökünde kalıcı kayıt olarak durduğunu söyle (silinmez, bu işlemin
   tek receipt'i).
 - **caveman kapsam dışı** — `vibe-remove` onu kaldırmaz (context-mode gibi). Kullanıcı isterse:
